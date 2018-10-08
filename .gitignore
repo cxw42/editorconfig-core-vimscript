@@ -1,0 +1,12 @@
+*.egg-info
+dist
+/build*
+/Testing
+/Makefile
+/tests/Makefile
+*.cmake
+CMakeFiles
+CMakeCache.txt
+*.swp
+*~
+~*
