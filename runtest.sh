@@ -38,17 +38,17 @@ if (( "$#" < 1 )); then
     exit 1
 fi
 
-fn="$(mktemp)"
-touch "$fn"
-# Add -V1 to the below for debugging output
+fn="$(mktemp)"      # Output file
+
+# Run editorconfig.  Thanks for options to
+# http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
+# Add -V1 to the below for debugging output.
 vim -nNes -i NONE -u NONE -U NONE \
-    -c "set runtimepath+=$DIR" -c 'call editorconfig_core#currbuf_cli("'"$fn"'")' \
+    -c "set runtimepath+=$DIR" \
+    -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')" \
     -c 'q!' \
     -- "$1" </dev/null
-    # Thanks to
-    # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript
 vim -c "call editorconfig_core#currbuf_cli()" -c 'q!'
 cat "$fn"
-#echo "From $1; to $fn"
 rm -f "$fn"
 
