@@ -23,12 +23,22 @@ get_dir
 ###
 
 confname='.editorconfig'
+globpat=
 
-while getopts 'f:' opt ; do
+while getopts 'vf:g:' opt ; do
     case "$opt" in
+        (v) echo "EditorConfig VimScript Core Version 0.12.2"
+            exit 0
+            ;;
+
         (f) confname="$OPTARG"
             ;;
-        # TODO support -b
+        # TODO support -b[, -h?]
+
+        # Not in EditorConfig Core
+        (g) globpat="$OPTARG"
+            ;;
+
     esac
 done
 
@@ -40,14 +50,33 @@ fi
 
 fn="$(mktemp)"      # Output file
 
+vim_args=()
+
+if [[ $globpat ]]; then
+    vim_args+=(
+        -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}','${globpat//\'/\'\'}') | exit | else | cquit | endif"
+        -c 'q!'
+    )
+else
+    vim_args+=(
+        -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')"
+        -c 'q!'
+        -- "$1"
+    )
+fi
+
 # Run editorconfig.  Thanks for options to
 # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
 # Add -V1 to the below for debugging output.
 vim -nNes -i NONE -u NONE -U NONE \
     -c "set runtimepath+=$DIR" \
-    -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')" \
-    -c 'q!' \
-    -- "$1" </dev/null
-cat "$fn"
+    "${vim_args[@]}" \
+    </dev/null
+vimstatus="$?"
+if [[ $vimstatus -eq 0 ]]; then
+    cat "$fn"
+fi
+
 rm -f "$fn"
 
+exit "$vimstatus"
