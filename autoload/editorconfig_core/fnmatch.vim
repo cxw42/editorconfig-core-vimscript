@@ -158,7 +158,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
             endwhile
             if ! l:has_comma && l:pos < l:length
                 let l:num_range = matchlist(a:pat[l:index : l:pos-1], s:NUMERIC_RANGE)
-                if len(l:num_range) > 0
+                if len(l:num_range) > 0     " Remember the ranges
                     call add(l:numeric_groups, [ 0+l:num_range[1], 0+l:num_range[2] ])
                     let l:result .= '([+-]?\d+)'
                 else
@@ -263,25 +263,27 @@ function! editorconfig_core#fnmatch#fnmatchcase(name, pat)
 "    """
 "
     let [regex, num_groups] = s:cached_translate(a:pat)
-"    match = regex.match(name)
-"    if not match:
-    if a:name !~# regex
+    let l:match_groups = matchlist(a:name, regex)[1:]   " [0] = full match
+    if len(l:match_groups) == 0
         return 0
     endif
+
+    " Check numeric ranges
     let pattern_matched = 1
-    let l:match_groups = matchlist(a:name, regex)
-    for l:idx in range(1,len(l:match_groups))
+    for l:idx in range(0,len(l:match_groups))
         let l:num = l:match_groups[l:idx]
         if l:num ==# ''
             break
         endif
 
         let [min_num, max_num] = num_groups[l:idx]
-        if num[0] ==# '0' || min_num > (0+num) || (0+num) > max_num
-            pattern_matched = 0
+        " No explicit test for zero --- see editorconfig/editorconfig#371.
+        if min_num > (0+l:num) || (0+l:num) > max_num
+            let pattern_matched = 0
             break
         endif
     endfor
+
     return pattern_matched
 endfunction
 
