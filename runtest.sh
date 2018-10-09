@@ -48,7 +48,6 @@ vim -nNes -i NONE -u NONE -U NONE \
     -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')" \
     -c 'q!' \
     -- "$1" </dev/null
-vim -c "call editorconfig_core#currbuf_cli()" -c 'q!'
 cat "$fn"
 rm -f "$fn"
 

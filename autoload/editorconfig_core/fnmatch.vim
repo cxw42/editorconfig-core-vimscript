@@ -45,141 +45,164 @@ let s:NUMERIC_RANGE = '\v([+-]?\d+)' . '\.\.' . '([+-]?\d+)'
 " }}}1
 " === Translating globs to patterns ===================================== {{{1
 
-"def translate(pat, nested=False):
+function! s:re_escape(text)
+    return substitute(a:text, '\v([^0-9a-zA-Z_])', '\\\1', 'g')
+endfunction
+
+"def translate(pat, nested=0):
 "    """Translate a shell PATTERN to a regular expression.
 "
 "    There is no way to quote meta-characters.
 "    """
 function! editorconfig_core#fnmatch#translate(pat, ...)
     let l:nested = 0
-    if a:0 then
+    if a:0
         let l:nested = a:1
     endif
 
     let l:index = 0
-    let l:length = strlen(pat)  " Current index and length of pattern
+    let l:length = strlen(a:pat)  " Current index and length of pattern
     let l:brace_level = 0
-    let l:in_brackets = False
-    let l:result = ''
-    let l:is_escaped = False
+    let l:in_brackets = 0
+    let l:result = '\v'     " very magic
+    let l:is_escaped = 0
 
-"    matching_braces = (len(LEFT_BRACE.findall(pat)) ==
-"                       len(RIGHT_BRACE.findall(pat)))
     let l:left_braces=[]
     let l:right_braces=[]
-    substitute(pat, s:LEFT_BRACE, '\=add(l:left_braces, 1)', 'g')
-    substitute(pat, s:RIGHT_BRACE, '\=add(l:right_braces, 1)', 'g')
+    call substitute(a:pat, s:LEFT_BRACE, '\=add(l:left_braces, 1)', 'g')
+    call substitute(a:pat, s:RIGHT_BRACE, '\=add(l:right_braces, 1)', 'g')
     " Thanks to http://jeromebelleman.gitlab.io/posts/productivity/vimsub/
     let l:matching_braces = (len(l:left_braces) == len(l:right_braces))
+
+    " TODO update the escaping throughout
 
     let l:numeric_groups = []
     while l:index < l:length
         let l:current_char = a:pat[l:index]
         let l:index += 1
-"        if current_char == '*':
-"            pos = index
-"            if pos < length and pat[pos] == '*':
-"                result += '.*'
-"            else:
-"                result += '[^/]*'
-"        elif current_char == '?':
-"            result += '.'
-"        elif current_char == '[':
-"            if in_brackets:
-"                result += '\\['
-"            else:
-"                pos = index
-"                has_slash = False
-"                while pos < length and pat[pos] != ']':
-"                    if pat[pos] == '/' and pat[pos-1] != '\\':
-"                        has_slash = True
-"                        break
-"                    pos += 1
-"                if has_slash:
-"                    result += '\\[' + pat[index:(pos + 1)] + '\\]'
-"                    index = pos + 2
-"                else:
-"                    if index < length and pat[index] in '!^':
-"                        index += 1
-"                        result += '[^'
-"                    else:
-"                        result += '['
-"                    in_brackets = True
-"        elif current_char == '-':
-"            if in_brackets:
-"                result += current_char
-"            else:
-"                result += '\\' + current_char
-"        elif current_char == ']':
-"            result += current_char
-"            in_brackets = False
-"        elif current_char == '{':
-"            pos = index
-"            has_comma = False
-"            while pos < length and (pat[pos] != '}' or is_escaped):
-"                if pat[pos] == ',' and not is_escaped:
-"                    has_comma = True
-"                    break
-"                is_escaped = pat[pos] == '\\' and not is_escaped
-"                pos += 1
-"            if not has_comma and pos < length:
-"                num_range = NUMERIC_RANGE.match(pat[index:pos])
-"                if num_range:
+        if l:current_char ==# '*'
+            let l:pos = l:index
+            if l:pos < l:length && a:pat[l:pos] ==# '*'
+                let l:result .= '.*'
+            else
+                let l:result .= '[^/]*'
+            endif
+        elseif l:current_char ==# '?'
+            let l:result .= '.'
+        elseif l:current_char ==# '['
+            if l:in_brackets
+                let l:result .= '\\['
+            else
+                let l:pos = l:index
+                let l:has_slash = 0
+                while l:pos < l:length && a:pat[l:pos] != ']'
+                    if a:pat[l:pos] ==# '/' && a:pat[l:pos-1] != '\\'
+                        let has_slash = 1
+                        break
+                    endif
+                    let l:pos += 1
+                endwhile
+                if l:has_slash
+                    let l:result .= '\\[' + a:pat[l:index:(l:pos + 1)] + '\\]'
+                    let l:index = l:pos + 2
+                else
+                    if l:index < l:length && a:pat[l:index] in '!^'
+                        let l:index += 1
+                        let l:result .= '[^'
+                    else
+                        let l:result .= '['
+                    endif
+                    let l:in_brackets = 1
+                endif
+            endif
+        elseif l:current_char ==# '-'
+            if l:in_brackets
+                let l:result .= l:current_char
+            else
+                let l:result .= '\\' + l:current_char
+            endif
+        elseif l:current_char ==# ']'
+            let l:result .= l:current_char
+            let l:in_brackets = 0
+        elseif l:current_char ==# '{'
+            let l:pos = l:index
+            let l:has_comma = 0
+            while l:pos < l:length && (a:pat[l:pos] !=# '}' || l:is_escaped)
+                if a:pat[l:pos] ==# ',' && ! l:is_escaped
+                    let l:has_comma = 1
+                    break
+                endif
+                let l:is_escaped = a:pat[l:pos] ==# '\\' && ! l:is_escaped
+                let l:pos += 1
+            endwhile
+            if ! l:has_comma && l:pos < l:length
+                let l:num_range = NUMERIC_RANGE.match(a:pat[l:index:l:pos])
+                if l:num_range
+                    " TODO
 "                    numeric_groups.append(map(int, num_range.groups()))
-"                    result += "([+-]?\d+)"
-"                else:
-"                    inner_result, inner_groups = translate(pat[index:pos],
-"                                                           nested=True)
-"                    result += '\\{%s\\}' % (inner_result,)
-"                    numeric_groups += inner_groups
-"                index = pos + 1
-"            elif matching_braces:
-"                result += '(?:'
-"                brace_level += 1
-"            else:
-"                result += '\\{'
-"        elif current_char == ',':
-"            if brace_level > 0 and not is_escaped:
-"                result += '|'
-"            else:
-"                result += '\\,'
-"        elif current_char == '}':
-"            if brace_level > 0 and not is_escaped:
-"                result += ')'
-"                brace_level -= 1
-"            else:
-"                result += '\\}'
-"        elif current_char == '/':
-"            if pat[index:(index + 3)] == "**/":
-"                result += "(?:/|/.*/)"
-"                index += 3
-"            else:
-"                result += '/'
-"        elif current_char != '\\':
-"            result += re.escape(current_char)
-"        if current_char == '\\':
-"            if is_escaped:
-"                result += re.escape(current_char)
-"            is_escaped = not is_escaped
-"        else:
-"            is_escaped = False
+                    let l:result .= "([+-]?\d+)"
+                else
+                    let l:inner_xlat = translate(a:pat[l:index : l:pos], 1)
+                    let l:inner_result = l:inner_xlat[0]
+                    let l:inner_groups = l:inner_xlat[1]
+                    let l:result .= '\\{' . l:inner_result . '\\}'
+                    let l:numeric_groups += l:inner_groups
+                endif
+                let l:index = l:pos + 1
+            elseif l:matching_braces
+                let l:result .= '(?:'
+                let l:brace_level += 1
+            else
+                let l:result .= '\\{'
+            endif
+        elseif l:current_char ==# ','
+            if l:brace_level > 0 && ! l:is_escaped
+                let l:result .= '|'
+            else
+                let l:result .= '\\,'
+            endif
+        elseif l:current_char ==# '}'
+            if l:brace_level > 0 && ! l:is_escaped
+                let l:result .= ')'
+                let l:brace_level -= 1
+            else
+                let l:result .= '\\}'
+            endif
+        elseif l:current_char ==# '/'
+            if a:pat[l:index : (l:index + 3)] ==# "**/"
+                let l:result .= "(?:/|/.*/)"
+                let l:index += 3
+            else
+                let l:result .= '/'
+            endif
+        elseif l:current_char != '\\'
+            let l:result .= s:re_escape(l:current_char)
+        endif
+        if l:current_char ==# '\\'
+            if l:is_escaped
+                let l:result .= s:re_escape(l:current_char)
+            endif
+            let l:is_escaped = ! l:is_escaped
+        else
+            let l:is_escaped = 0
+        endif
     endwhile
 
-    if not l:nested
-        let l:result += '$'     "'\Z(?ms)'
+    if ! l:nested
+        let l:result .= '$'     "'\Z(?ms)'
             " TODO do we need to set MULTILINE and DOTALL?  Vim has \_.
             " instead of DOTALL, and \_^ / \_$ instead of MULTILINE.
     endif
     return [l:result, l:numeric_groups]
-endfunction #editorconfig_core#fnmatch#translate
+endfunction " #editorconfig_core#fnmatch#translate
 
 let s:_cache = {}
 
 function! s:cached_translate(pat)
-    if not pat in _cache:
-        res, num_groups = translate(pat)
-        regex = re.compile(res)
-        s:_cache[a:pat] = regex, num_groups
+    if ! has_key(s:_cache, a:pat)
+        "regex = re.compile(res)
+        s:_cache[a:pat] = translate(pat)    " we don't compile the regex
+    endif
     return s:_cache[a:pat]
 endfunction
 
@@ -221,11 +244,11 @@ endfunction
 "    regex, num_groups = cached_translate(pat)
 "    match = regex.match(name)
 "    if not match:
-"        return False
-"    pattern_matched = True
+"        return 0
+"    pattern_matched = 1
 "    for (num, (min_num, max_num)) in zip(match.groups(), num_groups):
 "        if num[0] == '0' or not (min_num <= int(num) <= max_num):
-"            pattern_matched = False
+"            pattern_matched = 0
 "            break
 "    return pattern_matched
 
