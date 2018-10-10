@@ -141,9 +141,7 @@ new_glob_test(g_brackets_slash_inside2 "ab[e/]cd.i" abecd.i)
 fails(g_brackets_slash_inside2)
 
 new_glob_test(g_brackets_slash_inside3 "ab[e/]cd.i" "ab[e/]cd.i")
-
-#The Python core doesn't yet handle this case, and neither do we.
-#new_glob_test(g_brackets_slash_inside4 "ab[/c" "ab[/c")
+new_glob_test(g_brackets_slash_inside4 "ab[/c" "ab[/c")
 
 ## Tests for { and }
 
@@ -179,9 +177,10 @@ new_glob_test(g_braces_empty_words4 a{,b,,c,}.e a,.e)
 fails(g_braces_empty_words4)
 
 ## no closing brace
-#new_glob_test(g_braces_no_closing braces.in {.f)
-#new_glob_test(g_braces_no_closing_negative braces.in .f)
-#
+new_glob_test(g_braces_no_closing "{.f" {.f)
+new_glob_test(g_braces_no_closing_negative "{.f" .f)
+fails(g_braces_no_closing_negative)
+
 ## nested braces
 #new_glob_test(g_braces_nested1 braces.in word,this}.g)
 #new_glob_test(g_braces_nested2 braces.in {also,this}.g)

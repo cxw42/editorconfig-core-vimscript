@@ -95,8 +95,6 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
     " Thanks to http://jeromebelleman.gitlab.io/posts/productivity/vimsub/
     let l:matching_braces = (len(l:left_braces) == len(l:right_braces))
 
-    " TODO update the escaping throughout
-
     let l:numeric_groups = []
     while l:index < l:length
         let l:current_char = a:pat[l:index]
@@ -127,14 +125,12 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
                     " POSIX IEEE 1003.1-2017 sec. 2.13.3: '/' cannot occur
                     " in a bracket expression, so [/] matches a literal
                     " three-character string '[' . '/' . ']'.
-                    "
-                    " TODO: replace [ with \[ within the extracted range
-                    " of a:pat?  I think doing so looks like the Right
-                    " Thing based on POSIX, but I can't tell.
-                    let l:result .= '\[' . a:pat[l:index : l:pos] . '\]'
-                    let l:index = l:pos + 2
+                    let l:result .= '\[' . s:re_escape(a:pat[l:index : l:pos-1]) . '\/'
+                        " escape the slash
+                    let l:index = l:pos + 1
+                        " resume after the slash
                 else
-                    if l:index < l:length && a:pat[l:index] =~# '\v[!^]'
+                    if l:index < l:length && a:pat[l:index] =~# '\v%(\^|\!)'
                         let l:index += 1
                         let l:result .= '[^'
                     else
@@ -150,8 +146,15 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
                 let l:result .= '\' + l:current_char
             endif
         elseif l:current_char ==# ']'
-            let l:result .= l:current_char
-            let l:in_brackets = 0
+            if l:in_brackets && !l:is_escaped
+                let l:result .= ']'
+                let l:in_brackets = 0
+            elseif l:is_escaped
+                let l:result .= '\]'
+                let l:is_escaped = 0
+            else
+                let l:result .= '\]'
+            endif
         elseif l:current_char ==# '{'
             let l:pos = l:index
             let l:has_comma = 0
