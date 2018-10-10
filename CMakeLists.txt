@@ -10,6 +10,6 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 project(editorconfig-core-vimscript NONE)
 
 enable_testing()
-set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/runtest.sh")
+set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/editorconfig")
 #add_subdirectory(tests)
 add_subdirectory(globtests)

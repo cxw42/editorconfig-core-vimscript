@@ -132,15 +132,17 @@ new_glob_test(g_brackets_range_and_choice "[abd-g].e" e.e)
 ## character choice with a dash
 new_glob_test(g_brackets_choice_with_dash "[-ab].f" -.f)
 
-## slash inside brackets
+## slash inside brackets - the bracket and slash are literal, not a
+## glob expression.
 new_glob_test(g_brackets_slash_inside1 "ab[e/]cd.i" ab/cd.i)
 fails(g_brackets_slash_inside1)
 
-# TODO
-#new_glob_test(g_brackets_slash_inside2 "ab[e/]cd.i" abecd.i)
-#
-#new_glob_test(g_brackets_slash_inside3 "ab[e/]cd.i" "ab[e/]cd.i")
-#
+new_glob_test(g_brackets_slash_inside2 "ab[e/]cd.i" abecd.i)
+fails(g_brackets_slash_inside2)
+
+new_glob_test(g_brackets_slash_inside3 "ab[e/]cd.i" "ab[e/]cd.i")
+
+#The Python core doesn't yet handle this case, and neither do we.
 #new_glob_test(g_brackets_slash_inside4 "ab[/c" "ab[/c")
 
 ## Tests for { and }
@@ -163,17 +165,19 @@ new_glob_test(g_braces_empty_choice_negative "{}.c" .c)
 fails(g_braces_empty_choice_negative)
 
 ## choice with empty word
-#new_glob_test(g_braces_empty_word1 braces.in a.d)
-#new_glob_test(g_braces_empty_word2 braces.in ab.d)
-#new_glob_test(g_braces_empty_word3 braces.in ac.d)
-#new_glob_test(g_braces_empty_word4 braces.in a,.d)
-#
+new_glob_test(g_braces_empty_word1 a{b,c,}.d a.d)
+new_glob_test(g_braces_empty_word2 a{b,c,}.d ab.d)
+new_glob_test(g_braces_empty_word3 a{b,c,}.d ac.d)
+new_glob_test(g_braces_empty_word4 a{b,c,}.d a,.d)
+fails(g_braces_empty_word4)
+
 ## choice with empty words
-#new_glob_test(g_braces_empty_words1 braces.in a.e)
-#new_glob_test(g_braces_empty_words2 braces.in ab.e)
-#new_glob_test(g_braces_empty_words3 braces.in ac.e)
-#new_glob_test(g_braces_empty_words4 braces.in a,.e)
-#
+new_glob_test(g_braces_empty_words1 a{,b,,c,}.e a.e)
+new_glob_test(g_braces_empty_words2 a{,b,,c,}.e ab.e)
+new_glob_test(g_braces_empty_words3 a{,b,,c,}.e ac.e)
+new_glob_test(g_braces_empty_words4 a{,b,,c,}.e a,.e)
+fails(g_braces_empty_words4)
+
 ## no closing brace
 #new_glob_test(g_braces_no_closing braces.in {.f)
 #new_glob_test(g_braces_no_closing_negative braces.in .f)

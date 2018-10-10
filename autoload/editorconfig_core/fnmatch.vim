@@ -124,7 +124,14 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
                     let l:pos += 1
                 endwhile
                 if l:has_slash
-                    let l:result .= '\[' + a:pat[l:index : l:pos] + '\]'
+                    " POSIX IEEE 1003.1-2017 sec. 2.13.3: '/' cannot occur
+                    " in a bracket expression, so [/] matches a literal
+                    " three-character string '[' . '/' . ']'.
+                    "
+                    " TODO: replace [ with \[ within the extracted range
+                    " of a:pat?  I think doing so looks like the Right
+                    " Thing based on POSIX, but I can't tell.
+                    let l:result .= '\[' . a:pat[l:index : l:pos] . '\]'
                     let l:index = l:pos + 2
                 else
                     if l:index < l:length && a:pat[l:index] =~# '\v[!^]'
