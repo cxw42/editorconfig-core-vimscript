@@ -57,6 +57,7 @@ if [[ $globpat ]]; then
         -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}','${globpat//\'/\'\'}') | exit | else | cquit | endif"
         -c 'q!'
     )
+    echo "Matching -${globpat}- against -${1}-" 1>&2
 else
     vim_args+=(
         -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')"

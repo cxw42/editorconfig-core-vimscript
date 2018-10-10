@@ -11,4 +11,5 @@ project(editorconfig-core-vimscript NONE)
 
 enable_testing()
 set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/runtest.sh")
-add_subdirectory(tests)
+#add_subdirectory(tests)
+add_subdirectory(globtests)

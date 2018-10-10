@@ -162,7 +162,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
                     call add(l:numeric_groups, [ 0+l:num_range[1], 0+l:num_range[2] ])
                     let l:result .= '([+-]?\d+)'
                 else
-                    let l:inner_xlat = translate(a:pat[l:index : l:pos-1], 1)
+                    let l:inner_xlat = editorconfig_core#fnmatch#translate(a:pat[l:index : l:pos-1], 1)
                     let l:inner_result = l:inner_xlat[0]
                     let l:inner_groups = l:inner_xlat[1]
                     let l:result .= '\{' . l:inner_result . '\}'
