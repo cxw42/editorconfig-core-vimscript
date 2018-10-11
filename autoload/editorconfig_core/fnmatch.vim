@@ -83,9 +83,14 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
     let l:length = strlen(a:pat)  " Current index and length of pattern
     let l:brace_level = 0
     let l:in_brackets = 0
-    let l:result = '\v'     " very magic
+
+    let l:result = ''
+    if !l:nested
+        let l:result = '\v'     " very magic
+    endif
         " Note: the Python sets MULTILINE and DOTALL, but Vim has \_.
         " instead of DOTALL, and \_^ / \_$ instead of MULTILINE.
+:
     let l:is_escaped = 0
 
     let l:left_braces=[]

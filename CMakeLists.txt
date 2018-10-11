@@ -12,4 +12,6 @@ project(editorconfig-core-vimscript NONE)
 enable_testing()
 set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/editorconfig")
 #add_subdirectory(tests)
+
 add_subdirectory(globtests)
+configure_file(CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)

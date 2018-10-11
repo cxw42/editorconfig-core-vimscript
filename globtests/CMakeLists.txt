@@ -38,11 +38,23 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     enable_testing()
 endif()
 
-# The most common test function
+# The most common test function.  NOTE: the pattern and source file must be
+# doubly-escaped.  This is because cmake interprets one level of escaping while
+# generating the input for ctest, and then ctest interprets the results.
+# For example, in g_brackets_close_inside (below), the string "\\\\" is
+# rendered by cmake as "\\" in the CTestTestfile.cmake file that cmake outputs.
+# The ctest executable then sees "\\" as a single escaped backslash.
+#
+# This would probably be easier if we could use CMake 3.0+ bracket arguments
+# (https://cmake.org/cmake/help/v3.4/manual/cmake-language.7.html#bracket-argument),
+# but I don't want to require a higher CMake version than the rest of the project.
+
 function(new_glob_test name pattern src_file)
-    add_test(${name} ${EDITORCONFIG_CMD} -g ${pattern}
+    add_test(${name} "${EDITORCONFIG_CMD}" -g "${pattern}"
         "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}")
 endfunction()
+
+# Mark a test as one that fails, i.e., the filename doesn't match the glob.
 function(fails name)
     set_tests_properties(${name} PROPERTIES WILL_FAIL TRUE)
 endfunction()
@@ -182,102 +194,132 @@ new_glob_test(g_braces_no_closing_negative "{.f" .f)
 fails(g_braces_no_closing_negative)
 
 ## nested braces
-#new_glob_test(g_braces_nested1 braces.in word,this}.g)
-#new_glob_test(g_braces_nested2 braces.in {also,this}.g)
-#new_glob_test(g_braces_nested3 braces.in word.g)
-#new_glob_test(g_braces_nested4 braces.in {also}.g)
-#new_glob_test(g_braces_nested5 braces.in this.g)
-#
+new_glob_test(g_braces_nested1 "{word,{also},this}.g" word,this}.g)
+fails(g_braces_nested1)
+new_glob_test(g_braces_nested2 "{word,{also},this}.g" {also,this}.g)
+fails(g_braces_nested2)
+new_glob_test(g_braces_nested3 "{word,{also},this}.g" word.g)
+new_glob_test(g_braces_nested4 "{word,{also},this}.g" {also}.g)
+new_glob_test(g_braces_nested5 "{word,{also},this}.g" this.g)
+
 ## closing inside beginning
-#new_glob_test(g_braces_closing_in_beginning braces.in {},b}.h)
-#
+new_glob_test(g_braces_closing_in_beginning "{},b}.h" {},b}.h)
+
 ## missing closing braces
-#new_glob_test(g_braces_unmatched1 braces.in {{,b,c{d}.i)
-#new_glob_test(g_braces_unmatched2 braces.in {.i)
-#new_glob_test(g_braces_unmatched3 braces.in b.i)
-#new_glob_test(g_braces_unmatched4 braces.in c{d.i)
-#new_glob_test(g_braces_unmatched5 braces.in .i)
-#
+new_glob_test(g_braces_unmatched1 "{{,b,c{d}.i" {{,b,c{d}.i)
+new_glob_test(g_braces_unmatched2 "{{,b,c{d}.i" {.i)
+fails(g_braces_unmatched2)
+new_glob_test(g_braces_unmatched3 "{{,b,c{d}.i" b.i)
+fails(g_braces_unmatched3)
+new_glob_test(g_braces_unmatched4 "{{,b,c{d}.i" c{d.i)
+fails(g_braces_unmatched4)
+new_glob_test(g_braces_unmatched5 "{{,b,c{d}.i" .i)
+fails(g_braces_unmatched5)
+
 ## escaped comma
-#new_glob_test(g_braces_escaped_comma1 braces.in a,b.txt)
-#new_glob_test(g_braces_escaped_comma2 braces.in a.txt)
-#new_glob_test(g_braces_escaped_comma3 braces.in cd.txt)
-#
+new_glob_test(g_braces_escaped_comma1 "{a\\\\,b,cd}.txt" a,b.txt)
+new_glob_test(g_braces_escaped_comma2 "{a\\\\,b,cd}.txt" a.txt)
+fails(g_braces_escaped_comma2)
+new_glob_test(g_braces_escaped_comma3 "{a\\\\,b,cd}.txt" cd.txt)
+
 ## escaped closing brace
-#new_glob_test(g_braces_escaped_brace1 braces.in e.txt)
-#new_glob_test(g_braces_escaped_brace2 braces.in }.txt)
-#new_glob_test(g_braces_escaped_brace3 braces.in f.txt)
-#
-## escaped backslash
-#new_glob_test(g_braces_escaped_backslash1 braces.in g.txt)
-#if(NOT WIN32) # this case is impossible on Windows.
-#    new_glob_test(g_braces_escaped_backslash2 braces.in \\\\.txt)
-#endif()
-#new_glob_test(g_braces_escaped_backslash3 braces.in i.txt)
-#
+new_glob_test(g_braces_escaped_brace1 "{e,\\\\},f}.txt" e.txt)
+new_glob_test(g_braces_escaped_brace2 "{e,\\\\},f}.txt" }.txt)
+new_glob_test(g_braces_escaped_brace3 "{e,\\\\},f}.txt" f.txt)
+
+## escaped backslash - 8 backslashes are reduced to 2 by cmake+ctest
+new_glob_test(g_braces_escaped_backslash1 "{g,\\\\\\\\,i}.txt" g.txt)
+if(NOT WIN32) # this case is impossible on Windows.
+    new_glob_test(g_braces_escaped_backslash2 "{g,\\\\\\\\,i}.txt" "\\\\.txt")
+endif()
+new_glob_test(g_braces_escaped_backslash3 "{g,\\\\\\\\,i}.txt" i.txt)
+
 ## patterns nested in braces
-#new_glob_test(g_braces_patterns_nested1 braces.in some.j)
-#new_glob_test(g_braces_patterns_nested2 braces.in abe.j)
-#new_glob_test(g_braces_patterns_nested3 braces.in abf.j)
-#new_glob_test(g_braces_patterns_nested4 braces.in abg.j)
-#new_glob_test(g_braces_patterns_nested5 braces.in ace.j)
-#new_glob_test(g_braces_patterns_nested6 braces.in acf.j)
-#new_glob_test(g_braces_patterns_nested7 braces.in acg.j)
-#new_glob_test(g_braces_patterns_nested8 braces.in abce.j)
-#new_glob_test(g_braces_patterns_nested9 braces.in abcf.j)
-#new_glob_test(g_braces_patterns_nested10 braces.in abcg.j)
-#new_glob_test(g_braces_patterns_nested11 braces.in ae.j)
-#new_glob_test(g_braces_patterns_nested12 braces.in .j)
-#
+new_glob_test(g_braces_patterns_nested1 "{some,a{*c,b}[ef]}.j" some.j)
+new_glob_test(g_braces_patterns_nested2 "{some,a{*c,b}[ef]}.j" abe.j)
+new_glob_test(g_braces_patterns_nested3 "{some,a{*c,b}[ef]}.j" abf.j)
+new_glob_test(g_braces_patterns_nested4 "{some,a{*c,b}[ef]}.j" abg.j)
+fails(g_braces_patterns_nested4)
+new_glob_test(g_braces_patterns_nested5 "{some,a{*c,b}[ef]}.j" ace.j)
+new_glob_test(g_braces_patterns_nested6 "{some,a{*c,b}[ef]}.j" acf.j)
+new_glob_test(g_braces_patterns_nested7 "{some,a{*c,b}[ef]}.j" acg.j)
+fails(g_braces_patterns_nested7)
+new_glob_test(g_braces_patterns_nested8 "{some,a{*c,b}[ef]}.j" abce.j)
+new_glob_test(g_braces_patterns_nested9 "{some,a{*c,b}[ef]}.j" abcf.j)
+new_glob_test(g_braces_patterns_nested10 "{some,a{*c,b}[ef]}.j" abcg.j)
+fails(g_braces_patterns_nested10)
+new_glob_test(g_braces_patterns_nested11 "{some,a{*c,b}[ef]}.j" ae.j)
+fails(g_braces_patterns_nested11)
+new_glob_test(g_braces_patterns_nested12 "{some,a{*c,b}[ef]}.j" .j)
+fails(g_braces_patterns_nested12)
+
 ## numeric brace range
-#new_glob_test(g_braces_numeric_range1 braces.in 1)
-#new_glob_test(g_braces_numeric_range2 braces.in 3)
-#new_glob_test(g_braces_numeric_range3 braces.in 15)
-#new_glob_test(g_braces_numeric_range4 braces.in 60)
-#new_glob_test(g_braces_numeric_range5 braces.in 5a)
-#new_glob_test(g_braces_numeric_range6 braces.in 120)
-#new_glob_test(g_braces_numeric_range7 braces.in 121)
-#new_glob_test(g_braces_numeric_range8 braces.in 060)
-#
+new_glob_test(g_braces_numeric_range1 "{3..120}" 1)
+fails(g_braces_numeric_range1)
+new_glob_test(g_braces_numeric_range2 "{3..120}" 3)
+new_glob_test(g_braces_numeric_range3 "{3..120}" 15)
+new_glob_test(g_braces_numeric_range4 "{3..120}" 60)
+new_glob_test(g_braces_numeric_range5 "{3..120}" 5a)
+fails(g_braces_numeric_range5)
+new_glob_test(g_braces_numeric_range6 "{3..120}" 120)
+new_glob_test(g_braces_numeric_range7 "{3..120}" 121)
+fails(g_braces_numeric_range7)
+
+new_glob_test(g_braces_numeric_range8 "{3..120}" 060)
+fails(g_braces_numeric_range8)
+
 ## alphabetical brace range: letters should not be considered for ranges
-#new_glob_test(g_braces_alpha_range1 braces.in {aardvark..antelope})
-#new_glob_test(g_braces_alpha_range2 braces.in a)
-#new_glob_test(g_braces_alpha_range3 braces.in aardvark)
-#new_glob_test(g_braces_alpha_range4 braces.in agreement)
-#new_glob_test(g_braces_alpha_range5 braces.in antelope)
-#new_glob_test(g_braces_alpha_range6 braces.in antimatter)
-#
-#
-## Tests for **
-#
+new_glob_test(g_braces_alpha_range1 "{aardvark..antelope}" {aardvark..antelope})
+new_glob_test(g_braces_alpha_range2 "{aardvark..antelope}" a)
+fails(g_braces_alpha_range2)
+new_glob_test(g_braces_alpha_range3 "{aardvark..antelope}" aardvark)
+fails(g_braces_alpha_range3)
+new_glob_test(g_braces_alpha_range4 "{aardvark..antelope}" agreement)
+fails(g_braces_alpha_range4)
+new_glob_test(g_braces_alpha_range5 "{aardvark..antelope}" antelope)
+fails(g_braces_alpha_range5)
+new_glob_test(g_braces_alpha_range6 "{aardvark..antelope}" antimatter)
+fails(g_braces_alpha_range6)
+
+
 ## test EditorConfig files with UTF-8 characters larger than 127
-#new_glob_test(g_utf_8_char utf8char.in "中文.txt")
-#
-## matches over path separator
-#new_glob_test(g_star_star_over_separator1 star_star.in a/z.c)
-#new_glob_test(g_star_star_over_separator2 star_star.in amnz.c)
-#new_glob_test(g_star_star_over_separator3 star_star.in am/nz.c)
-#new_glob_test(g_star_star_over_separator4 star_star.in a/mnz.c)
-#new_glob_test(g_star_star_over_separator5 star_star.in amn/z.c)
-#new_glob_test(g_star_star_over_separator6 star_star.in a/mn/z.c)
-#
-#new_glob_test(g_star_star_over_separator7 star_star.in b/z.c)
-#new_glob_test(g_star_star_over_separator8 star_star.in b/mnz.c)
-#new_glob_test(g_star_star_over_separator9 star_star.in b/mn/z.c)
-#new_glob_test(g_star_star_over_separator10 star_star.in bmnz.c)
-#new_glob_test(g_star_star_over_separator11 star_star.in bm/nz.c)
-#new_glob_test(g_star_star_over_separator12 star_star.in bmn/z.c)
-#
-#new_glob_test(g_star_star_over_separator13 star_star.in c/z.c)
-#new_glob_test(g_star_star_over_separator14 star_star.in cmn/z.c)
-#new_glob_test(g_star_star_over_separator15 star_star.in c/mn/z.c)
-#new_glob_test(g_star_star_over_separator16 star_star.in cmnz.c)
-#new_glob_test(g_star_star_over_separator17 star_star.in cm/nz.c)
-#new_glob_test(g_star_star_over_separator18 star_star.in c/mnz.c)
-#
-#new_glob_test(g_star_star_over_separator19 star_star.in d/z.c)
-#new_glob_test(g_star_star_over_separator20 star_star.in d/mn/z.c)
-#new_glob_test(g_star_star_over_separator21 star_star.in dmnz.c)
-#new_glob_test(g_star_star_over_separator22 star_star.in dm/nz.c)
-#new_glob_test(g_star_star_over_separator23 star_star.in d/mnz.c)
-#new_glob_test(g_star_star_over_separator24 star_star.in dmn/z.c)
+new_glob_test(g_utf_8_char "中文.txt" "中文.txt")
+
+## Tests for ** - matches over path separator
+new_glob_test(g_star_star_over_separator1 "a**z.c" a/z.c)
+new_glob_test(g_star_star_over_separator2 "a**z.c" amnz.c)
+new_glob_test(g_star_star_over_separator3 "a**z.c" am/nz.c)
+new_glob_test(g_star_star_over_separator4 "a**z.c" a/mnz.c)
+new_glob_test(g_star_star_over_separator5 "a**z.c" amn/z.c)
+new_glob_test(g_star_star_over_separator6 "a**z.c" a/mn/z.c)
+
+new_glob_test(g_star_star_over_separator7 "b/**z.c" b/z.c)
+new_glob_test(g_star_star_over_separator8 "b/**z.c" b/mnz.c)
+new_glob_test(g_star_star_over_separator9 "b/**z.c" b/mn/z.c)
+new_glob_test(g_star_star_over_separator10 "b/**z.c" bmnz.c)
+fails(g_star_star_over_separator10)
+new_glob_test(g_star_star_over_separator11 "b/**z.c" bm/nz.c)
+fails(g_star_star_over_separator11)
+new_glob_test(g_star_star_over_separator12 "b/**z.c" bmn/z.c)
+fails(g_star_star_over_separator12)
+
+new_glob_test(g_star_star_over_separator13 "c**/z.c" c/z.c)
+new_glob_test(g_star_star_over_separator14 "c**/z.c" cmn/z.c)
+new_glob_test(g_star_star_over_separator15 "c**/z.c" c/mn/z.c)
+new_glob_test(g_star_star_over_separator16 "c**/z.c" cmnz.c)
+fails(g_star_star_over_separator16)
+new_glob_test(g_star_star_over_separator17 "c**/z.c" cm/nz.c)
+fails(g_star_star_over_separator17)
+new_glob_test(g_star_star_over_separator18 "c**/z.c" c/mnz.c)
+fails(g_star_star_over_separator18)
+
+new_glob_test(g_star_star_over_separator19 "d/**/z.c" d/z.c)
+new_glob_test(g_star_star_over_separator20 "d/**/z.c" d/mn/z.c)
+new_glob_test(g_star_star_over_separator21 "d/**/z.c" dmnz.c)
+fails(g_star_star_over_separator21)
+new_glob_test(g_star_star_over_separator22 "d/**/z.c" dm/nz.c)
+fails(g_star_star_over_separator22)
+new_glob_test(g_star_star_over_separator23 "d/**/z.c" d/mnz.c)
+fails(g_star_star_over_separator23)
+new_glob_test(g_star_star_over_separator24 "d/**/z.c" dmn/z.c)
+fails(g_star_star_over_separator24)
