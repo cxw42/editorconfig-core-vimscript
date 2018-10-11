@@ -104,15 +104,19 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
     while l:index < l:length
         let l:current_char = a:pat[l:index]
         let l:index += 1
+
         if l:current_char ==# '*'
             let l:pos = l:index
             if l:pos < l:length && a:pat[l:pos] ==# '*'
                 let l:result .= '\_.*'
+                let l:index += 1    " skip the second star
             else
                 let l:result .= '[^/]*'
             endif
+
         elseif l:current_char ==# '?'
             let l:result .= '\_.'
+
         elseif l:current_char ==# '['
             if l:in_brackets
                 let l:result .= '\['
@@ -144,12 +148,14 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
                     let l:in_brackets = 1
                 endif
             endif
+
         elseif l:current_char ==# '-'
             if l:in_brackets
                 let l:result .= l:current_char
             else
                 let l:result .= '\' + l:current_char
             endif
+
         elseif l:current_char ==# ']'
             if l:in_brackets && !l:is_escaped
                 let l:result .= ']'
@@ -160,6 +166,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
             else
                 let l:result .= '\]'
             endif
+
         elseif l:current_char ==# '{'
             let l:pos = l:index
             let l:has_comma = 0
@@ -190,12 +197,14 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
             else
                 let l:result .= '\{'
             endif
+
         elseif l:current_char ==# ','
             if l:brace_level > 0 && ! l:is_escaped
                 let l:result .= '|'
             else
                 let l:result .= '\,'
             endif
+
         elseif l:current_char ==# '}'
             if l:brace_level > 0 && ! l:is_escaped
                 let l:result .= ')'
@@ -203,16 +212,19 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
             else
                 let l:result .= '\}'
             endif
+
         elseif l:current_char ==# '/'
             if a:pat[l:index : (l:index + 2)] ==# '**/'
                 let l:result .= '%(/|/\_.*/)'
                 let l:index += 3
             else
-                let l:result .= '/'
+                let l:result .= '\/'
             endif
+
         elseif l:current_char != '\'
             let l:result .= s:re_escape(l:current_char)
         endif
+
         if l:current_char ==# '\'
             if l:is_escaped
                 let l:result .= s:re_escape(l:current_char)
@@ -221,6 +233,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
         else
             let l:is_escaped = 0
         endif
+
     endwhile
 
     if ! l:nested
@@ -230,12 +243,11 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
 endfunction " #editorconfig_core#fnmatch#translate
 
 let s:_cache = {}
-
 function! s:cached_translate(pat)
     if ! has_key(s:_cache, a:pat)
         "regex = re.compile(res)
         let s:_cache[a:pat] =
-            \editorconfig_core#fnmatch#translate(a:pat)
+            \ editorconfig_core#fnmatch#translate(a:pat)
             " we don't compile the regex
     endif
     return s:_cache[a:pat]
@@ -263,10 +275,23 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
 "    If you don't want this, use fnmatchcase(FILENAME, PATTERN).
 "    """
 "
-    let l:localname = fnamemodify(a:name, ':p')
-        " TODO does this normalize case?
+    " Note: Don't do this; it throws away the backslash in '\.txt' on Cygwin.
+    " let l:localname = fnamemodify(a:name, ':p')
+    " TODO replace this functionality.  I note that ingo#fs#path#Canonicalize
+    " uses ':p', so would have the same problem.  Also,
+    " fnamemodify('\\.txt',':p') gives '//.txt' on Cygwin, which is also wrong.
+
 "    name = os.path.normpath(name).replace(os.sep, "/")
-    return editorconfig_core#fnmatch#fnmatchcase(l:localname, a:pat)
+
+    if editorconfig_core#util#is_win()
+        let l:name = substitute(tolower(a:name), '\v\\', '/', 'g')
+        let l:pat = tolower(a:pat)
+    else
+        let l:name = a:name
+        let l:pat = a:pat
+    endif
+
+    return editorconfig_core#fnmatch#fnmatchcase(l:name, l:pat)
 endfunction
 
 function! editorconfig_core#fnmatch#fnmatchcase(name, pat)
