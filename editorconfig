@@ -66,6 +66,7 @@ else
     )
 fi
 
+echo Vim args: "${vim_args[@]}" | od -c 1>&2
 # Run editorconfig.  Thanks for options to
 # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
 # Add -V1 to the below for debugging output.
@@ -74,6 +75,7 @@ vim -nNes -i NONE -u NONE -U NONE \
     "${vim_args[@]}" \
     </dev/null
 vimstatus="$?"
+echo "Vim returned $vimstatus" 1>&2
 if [[ $vimstatus -eq 0 ]]; then
     cat "$fn"
 fi
@@ -81,3 +83,4 @@ fi
 rm -f "$fn"
 
 exit "$vimstatus"
+# vi: set ft=sh:
