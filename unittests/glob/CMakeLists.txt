@@ -34,7 +34,7 @@ project(editorconfig-core-test NONE)
 # here.
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
     cmake_minimum_required(VERSION 2.6)
-    set(EDITORCONFIG_CMD "editorconfig" CACHE STRING "editorconfig command (with -g <pattern> support.")
+    set(unit-test EDITORCONFIG_UNIT_TEST_CMD "editorconfig" CACHE STRING "editorconfig unit-test command (with -g <pattern> support.")
     enable_testing()
 endif()
 
@@ -50,7 +50,7 @@ endif()
 # but I don't want to require a higher CMake version than the rest of the project.
 
 function(new_glob_test name pattern src_file)
-    add_test(${name} "${EDITORCONFIG_CMD}" -g "${pattern}" --
+    add_test(${name} "${EDITORCONFIG_UNIT_TEST_CMD}" -g "${pattern}" --
         "${src_file}")
 endfunction()
 

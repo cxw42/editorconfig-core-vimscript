@@ -1,6 +1,5 @@
 #!/bin/bash
-# ecunit: Editorconfig Vimscript core unit-testing script
-# editorconfig: CLI
+# editorconfig: Editorconfig Vimscript core CLI
 # This script is CC-BY-SA 3.0.
 
 # Get the directory of this script.  From
@@ -24,21 +23,17 @@ get_dir
 ###
 
 confname='.editorconfig'
-globpat=
-initest=
 
-while getopts 'f:g:i:' opt ; do
+while getopts 'vf:' opt ; do
     case "$opt" in
+        (v) echo "EditorConfig VimScript Core Version 0.12.2"
+            exit 0
+            ;;
+
         (f) confname="$OPTARG"
             ;;
         # TODO support -b[, -h?]
 
-        # Not in EditorConfig Core
-        (g) globpat="$OPTARG"
-            ;;
-
-        (i) initest="$OPTARG"
-            ;;
     esac
 done
 
@@ -52,27 +47,13 @@ fn="$(mktemp)"      # Output file
 
 vim_args=()
 
-if [[ $globpat ]]; then
-    vim_args+=(
-        -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}','${globpat//\'/\'\'}') | exit | else | cquit | endif"
-        -c 'q!'
-    )
-    echo "Matching -${globpat}- against -${1}-" 1>&2
-elif [[ $initest ]]; then
-    echo "ini test not yet implemented" 1>&2
-    exit 1
-else
-    vim_args+=(
-        -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')"
-        -c 'q!'
-        -- "$1"
-    )
-fi
+vim_args+=(
+    -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')"
+    -c 'q!'
+    -- "$1"
+)
 
-# Some extra debugging output to stderr - use ctest --output-on-failure
-# to see it for failing tests.
-echo Vim args: "${vim_args[@]}" | od -c 1>&2
-
+#echo Vim args: "${vim_args[@]}" | od -c 1>&2
 # Run editorconfig.  Thanks for options to
 # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
 # Add -V1 to the below for debugging output.
@@ -81,8 +62,7 @@ vim -nNes -i NONE -u NONE -U NONE \
     "${vim_args[@]}" \
     </dev/null
 vimstatus="$?"
-
-echo "Vim returned $vimstatus" 1>&2
+#echo "Vim returned $vimstatus" 1>&2
 if [[ $vimstatus -eq 0 ]]; then
     cat "$fn"
 fi
