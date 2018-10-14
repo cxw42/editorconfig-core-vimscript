@@ -275,13 +275,9 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
 "    If you don't want this, use fnmatchcase(FILENAME, PATTERN).
 "    """
 "
-    " Note: Don't do this; it throws away the backslash in '\.txt' on Cygwin.
-    " let l:localname = fnamemodify(a:name, ':p')
-    " TODO replace this functionality.  I note that ingo#fs#path#Canonicalize
-    " uses ':p', so would have the same problem.  Also,
-    " fnamemodify('\\.txt',':p') gives '//.txt' on Cygwin, which is also wrong.
-
-"    name = os.path.normpath(name).replace(os.sep, "/")
+    " Note: This throws away the backslash in '\.txt' on Cygwin, but that
+    " makes sense since it's Windows under the hood.
+    let l:localname = fnamemodify(a:name, ':p')
 
     if editorconfig_core#util#is_win()
         let l:name = substitute(tolower(a:name), '\v\\', '/', 'g')

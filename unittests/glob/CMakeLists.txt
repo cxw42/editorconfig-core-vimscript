@@ -229,7 +229,7 @@ new_glob_test(g_braces_escaped_brace3 "{e,\\\\},f}.txt" f.txt)
 
 ## escaped backslash - 8 backslashes are reduced to 2 by cmake+ctest
 new_glob_test(g_braces_escaped_backslash1 "{g,\\\\\\\\,i}.txt" g.txt)
-if(NOT WIN32) # this case is impossible on Windows.
+if( (NOT WIN32) AND (NOT CYGWIN) )  # this case is impossible on Windows.
     new_glob_test(g_braces_escaped_backslash2 "{g,\\\\\\\\,i}.txt" "\\\\.txt")
 endif()
 new_glob_test(g_braces_escaped_backslash3 "{g,\\\\\\\\,i}.txt" i.txt)
