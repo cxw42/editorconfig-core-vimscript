@@ -11,6 +11,7 @@ project(editorconfig-core-vimscript NONE)
 
 enable_testing()
 set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/editorconfig")
+set(EDITORCONFIG_UNIT_TEST_CMD "${CMAKE_SOURCE_DIR}/ecunit")
 #add_subdirectory(tests)
 
 add_subdirectory(unittests)
