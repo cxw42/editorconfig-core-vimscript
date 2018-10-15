@@ -2,114 +2,22 @@
 " editorconfig-core-vimscript.  Modifed from the Python core's ini.py.
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
-" === Regexes =========================================================== {{{1
+" === Regexes =========================================================== {{{2
 " Regular expressions for parsing section headers and options.
 " Allow ``]`` and escaped ``;`` and ``#`` characters in section headers
 let s:SECTCRE = '\v\s*\[(%([^\\#;]|\\\#|\\\;)+)\]'
-"    SECTCRE = re.compile(
-"        r"""
-
-"        \s *                                # Optional whitespace
-"        \[                                  # Opening square brace
-
-"        (?P<header>                         # One or more characters excluding
-"            ( [^\#;] | \\\# | \\; ) +       # unescaped # and ; characters
-"        )
-
-"        \]                                  # Closing square brace
-
-"        """, re.VERBOSE
-"    )
 
 " Regular expression for parsing option name/values.
 " Allow any amount of whitespaces, followed by separator
 " (either ``:`` or ``=``), followed by any amount of whitespace and then
 " any characters to eol
 let s:OPTCRE = '\v\s*([^:=\s][^:=]*)\s*([:=])\s*(.*)$'
-"    OPTCRE = re.compile(
-"        r"""
 
-"        \s *                                # Optional whitespace
-"        (?P<option>                         # One or more characters excluding
-"            [^:=\s]                         # : a = characters (and first
-"            [^:=] *                         # must not be whitespace)
-"        )
-"        \s *                                # Optional whitespace
-"        (?P<vi>
-"            [:=]                            # Single = or : character
-"        )
-"        \s *                                # Optional whitespace
-"        (?P<value>
-"            . *                             # One or more characters
-"        )
-"        $
-
-"        """, re.VERBOSE
-"    )
-
-" }}}1
-" === Python source ===================================================== {{{1
-""""EditorConfig file parser
-
-"Based on code from ConfigParser.py file distributed with Python 2.6.
-
-"Licensed under PSF License (see LICENSE.PSF file).
-
-"Changes to original ConfigParser:
-
-"- Special characters can be used in section names
-"- Octothorpe can be used for comments (not just at beginning of line)
-"- Only track INI options in sections that match target filename
-"- Stop parsing files with when ``root = true`` is found
-
-""""
-
-"import posixpath
-"import re
-"from codecs import open
-"from collections import OrderedDict
-"from os import sep
-"from os.path import dirname, normpath
-
-"from editorconfig.compat import u
-"from editorconfig.exceptions import ParsingError
-"from editorconfig.fnmatch import fnmatch
-
-
-"__all__ = ["ParsingError", "EditorConfigParser"]
-
-
-"class EditorConfigParser(object):
-
-"    """Parser for EditorConfig-style configuration files
-
-"    Based on RawConfigParser from ConfigParser.py in Python 2.6.
-"    """
-
-
-"    def __init__(self, filename):
-"        self.filename = filename
-"        self.options = OrderedDict()
-"        self.root_file = False
-" }}}1
-
-function! s:matches_filename(target_filename, glob)
-"    """Return True if section glob matches target_filename"""
-"    config_dirname = normpath(dirname(config_filename)).replace(sep, '/')
-    let l:glob = substitute(a:glob, '\v\\\#', '#', 'g')
-    glob = glob.replace("\\;", ";")
-    if '/' in glob
-"        if glob.find('/') == 0:
-"            glob = glob[1:]
-"        glob = posixpath.join(config_dirname, glob)
-    else
-"        glob = posixpath.join('**/', glob)
-    endif
-    return editorconfig_core#fnmatch#fnmatch(self.filename, glob)
-endfunction
+" }}}2
+" === Main ============================================================== {{{1
 
 " Read \p config_filename and return the options applicable to
-" \p target_filename.
+" \p target_filename.  This is the main entry point in this file.
 function! editorconfig_core#ini#read_ini_file(config_filename, target_filename)
     let l:oldenc = &encoding
 
@@ -119,7 +27,8 @@ function! editorconfig_core#ini#read_ini_file(config_filename, target_filename)
         let result = s:parse(a:config_filename, a:target_filename, l:lines)
     catch
         let &encoding = l:oldenc
-        throw v:exception   " rethrow
+        " rethrow, but with a prefix since throw 'Vim...' fails.
+        throw '!' . string(v:exception) . ' at ' . v:throwpoint
     endtry
 
     let &encoding = l:oldenc
@@ -143,7 +52,8 @@ function! s:parse(config_filename, target_filename, lines)
     let l:lineno = 0
     let l:e = []    " Errors, if any
 
-    let l:retval = {}   " Options applicable to this
+    let l:options = {}  " Options applicable to this file
+    let l:is_root = 0   " Whether a:config_filename declares root=true
 
     while 1
         if l:lineno == len(a:lines)
@@ -164,10 +74,16 @@ function! s:parse(config_filename, target_filename, lines)
         " a section header or option header?
         " is it a section header?
         let l:mo = matchlist(l:line, s:SECTCRE)
-        if len(l:mo):
+        if len(l:mo)
             let l:sectname = l:mo[1]
             let l:in_section = 1
-            let l:matching_section = s:matches_filename(a:target_filename, l:sectname)
+            let l:matching_section = s:matches_filename(
+                \ a:config_filename, a:target_filename, l:sectname)
+            "echom 'In section ' . l:sectname . ', which ' .
+            "    \ (l:matching_section ? 'matches' : 'does not match')
+            "    \ ' file ' . a:target_filename . ' (config ' .
+            "    \ a:config_filename . ')'
+
             " So sections can't start with a continuation line
             let l:optname = ''
         " an option line?
@@ -189,12 +105,14 @@ function! s:parse(config_filename, target_filename, lines)
                 if l:optval ==? '""'
                     let l:optval = ''
                 endif
-                let l:optname = self.optionxform(l:optname)
-                if !l:in_section && optname ==? 'root':
-                    let self.root_file = (optval ==? 'true') " XXX
+                let l:optname = s:optionxform(l:optname)
+                if !l:in_section && optname ==? 'root'
+                    let l:is_root = (optval ==? 'true')
                 endif
+                "echom 'Saw option ' . l:optname . ' = ' . l:optval
                 if l:matching_section
-                    let self.options[l:optname] = l:optval  " XXX
+                    let l:options[l:optname] = l:optval
+                    "echom '  - stashed'
                 endif
             else
                 " a non-fatal parsing error occurred.  set up the
@@ -211,12 +129,53 @@ function! s:parse(config_filename, target_filename, lines)
     if len(l:e)
         throw string(l:e)
     endif
+
+    return {'root': l:is_root, 'options': l:options}
 endfunction!
+
+" }}}1
+" === Helpers =========================================================== {{{1
 
 function! s:optionxform(optionstr)
     let l:result = substitute(a:optionstr, '\v\s+$', '', 'g')   " rstrip
     return tolower(l:result)
 endfunction
 
+" Return true if \p glob matches \p target_filename
+function! s:matches_filename(config_filename, target_filename, glob)
+"    config_dirname = normpath(dirname(config_filename)).replace(sep, '/')
+    let l:config_dirname = fnamemodify(a:config_filename, ':p:h') . '/'
+    if editorconfig_core#util#is_win()
+        let l:config_dirname = substitute(l:config_dirname, '\\', '/', 'g')
+    endif
 
-" vi: set fdm=marker:
+    let l:glob = substitute(a:glob, '\v\\([#;])', '\1', 'g')
+    if l:glob[0] ==# '/'
+        let l:glob = l:glob[1:]     " trim leading slash
+        let l:glob = l:config_dirname . l:glob
+    else
+        let l:glob = '**/' . l:glob
+    endif
+
+    "echom 'Checking <' . a:target_filename . '> against <' . l:glob . '>'
+    return editorconfig_core#fnmatch#fnmatch(a:target_filename, l:glob)
+endfunction
+
+" }}}1
+" === Copyright notices ================================================= {{{2
+""""EditorConfig file parser
+
+"Based on code from ConfigParser.py file distributed with Python 2.6.
+
+"Licensed under PSF License (see LICENSE.PSF file).
+
+"Changes to original ConfigParser:
+
+"- Special characters can be used in section names
+"- Octothorpe can be used for comments (not just at beginning of line)
+"- Only track INI options in sections that match target filename
+"- Stop parsing files with when ``root = true`` is found
+""""
+" }}}2
+
+" vi: set fdm=marker fdl=1:

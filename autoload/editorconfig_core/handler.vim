@@ -3,24 +3,6 @@
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
 " === Python source ===================================================== {{{1
-""""EditorConfig file handler
-
-"Provides ``EditorConfigHandler`` class for locating and parsing
-"EditorConfig files relevant to a given filepath.
-
-"Licensed under Simplified BSD License (see LICENSE.BSD file).
-
-""""
-
-"import os
-
-"from editorconfig import VERSION
-"from editorconfig.exceptions import PathError, VersionError
-"from editorconfig.ini import EditorConfigParser
-
-
-"__all__ = ['EditorConfigHandler']
-
 
 "def get_filenames(path, filename):
 "    """Yield full filepath for filename in each directory in and above path"""
@@ -132,4 +114,14 @@
 "            opts["indent_size"] = opts["tab_width"]
 " }}}1
 
-" vi: set fdm=marker:
+" === Copyright notices ================================================= {{{2
+""""EditorConfig file handler
+
+"Provides ``EditorConfigHandler`` class for locating and parsing
+"EditorConfig files relevant to a given filepath.
+
+"Licensed under Simplified BSD License (see LICENSE.BSD file).
+
+""""
+" }}}2
+" vi: set fdm=marker fdl=1:
