@@ -86,7 +86,10 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
 
     let l:result = ''
     if !l:nested
-        let l:result = '\v'     " very magic
+        let l:result = '\v%(^|\/)'  " \v = very magic
+        " Glob anchors at the start of the pattern or at a slash.  For
+        " example, 'o/*.txt' doesn't match 'foo/bar.txt', even though
+        " 'foo' ends with an 'o'.
     endif
         " Note: the Python sets MULTILINE and DOTALL, but Vim has \_.
         " instead of DOTALL, and \_^ / \_$ instead of MULTILINE.
@@ -280,14 +283,15 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
     let l:localname = fnamemodify(a:name, ':p')
 
     if editorconfig_core#util#is_win()
-        let l:name = substitute(tolower(a:name), '\v\\', '/', 'g')
+        let l:localname = substitute(tolower(l:localname), '\v\\', '/', 'g')
         let l:pat = tolower(a:pat)
     else
-        let l:name = a:name
+        let l:localname = l:localname
         let l:pat = a:pat
     endif
 
-    return editorconfig_core#fnmatch#fnmatchcase(l:name, l:pat)
+    "echom 'Testing <' . l:localname . '> against <' . l:pat . '>'
+    return editorconfig_core#fnmatch#fnmatchcase(l:localname, l:pat)
 endfunction
 
 function! editorconfig_core#fnmatch#fnmatchcase(name, pat)
