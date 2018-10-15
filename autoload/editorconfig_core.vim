@@ -18,10 +18,10 @@ function! editorconfig_core#currbuf_cli(out_name, ...)
 
     let l:fullname = expand("%:p")
 
-    "let l:output += ['Checking <' . l:fullname .'>']
-    "let l:output += ['Confname <' . l:confname .'>']
+    " let l:output += ['Checking <' . l:fullname .'>']      " DEBUG
+    " let l:output += ['Confname <' . l:confname .'>']      " DEBUG
     let l:options = editorconfig_core#handler#get_configurations(l:fullname, l:confname)
-    "let l:output += ['Raw opts: ' . string(l:options)]
+    " let l:output += ['Raw opts: ' . string(l:options)]    " DEBUG
 
     for [ l:key, l:value ] in items(l:options)
         let l:output += [ l:key . '=' . l:value ]

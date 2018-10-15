@@ -64,7 +64,7 @@ function! editorconfig_core#handler#get_configurations(target_filename, config_f
 
     " Attempt to find and parse every EditorConfig file in filetree
     for l:filename in l:conf_files
-        echom 'Trying ' . l:filename
+        " echom 'Trying ' . l:filename
         let l:parsed = editorconfig_core#ini#read_ini_file(l:filename, a:target_filename)
         if !has_key(l:parsed, 'options')
             continue

@@ -5,7 +5,7 @@
 " === Regexes =========================================================== {{{2
 " Regular expressions for parsing section headers and options.
 " Allow ``]`` and escaped ``;`` and ``#`` characters in section headers
-let s:SECTCRE = '\v\s*\[(%([^\\#;]|\\\#|\\\;)+)\]'
+let s:SECTCRE = '\v^\s*\[(%([^\\#;]|\\\#|\\\;|\\\])+)\]'
 
 " Regular expression for parsing option name/values.
 " Allow any amount of whitespaces, followed by separator
@@ -77,19 +77,21 @@ function! s:parse(config_filename, target_filename, lines)
 
         " a section header or option header?
         " is it a section header?
+        " echom "Header? <" . l:line . ">"
         let l:mo = matchlist(l:line, s:SECTCRE)
         if len(l:mo)
             let l:sectname = l:mo[1]
             let l:in_section = 1
             let l:matching_section = s:matches_filename(
                 \ a:config_filename, a:target_filename, l:sectname)
-            "echom 'In section ' . l:sectname . ', which ' .
-            "    \ (l:matching_section ? 'matches' : 'does not match')
-            "    \ ' file ' . a:target_filename . ' (config ' .
-            "    \ a:config_filename . ')'
+            " echom 'In section ' . l:sectname . ', which ' .
+            "     \ (l:matching_section ? 'matches' : 'does not match')
+            "     \ ' file ' . a:target_filename . ' (config ' .
+            "     \ a:config_filename . ')'
 
             " So sections can't start with a continuation line
             let l:optname = ''
+
         " an option line?
         else
             let l:mo = matchlist(l:line, s:OPTCRE)
@@ -123,8 +125,8 @@ function! s:parse(config_filename, target_filename, lines)
                 " exception but keep going. the exception will be
                 " raised at the end of the file and will contain a
                 " list of all bogus lines
-                add(e, "Parse error in '" . a:config_filename . "' at line " .
-                    \ a:lineno . ": '" . l:line . "'")
+                call add(e, "Parse error in '" . a:config_filename . "' at line " .
+                    \ l:lineno . ": '" . l:line . "'")
             endif
         endif
     endwhile

@@ -22,6 +22,14 @@ get_dir
 
 ###
 
+# Debug output
+debug="${EDITORCONFIG_DEBUG}"   # Debug filename
+if [[ $debug != /* ]]; then     # Relative to this script unless it
+    debug="${DIR}/${debug}"     # starts with a slash.  This is because
+fi                              # cwd is usually not $DIR when testing.
+[[ $debug ]] && date >> "$debug"
+
+# Option processing
 confname='.editorconfig'
 
 while getopts 'vf:' opt ; do
@@ -45,7 +53,9 @@ fi
 
 fn="$(mktemp)"      # Output file
 
-vim_args=()
+vim_args=(
+    -c "set runtimepath+=$DIR"
+)
 
 vim_args+=(
     -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')"
@@ -53,18 +63,32 @@ vim_args+=(
     -- "$1"
 )
 
-#echo Vim args: "${vim_args[@]}" | od -c 1>&2
 # Run editorconfig.  Thanks for options to
 # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
 # Add -V1 to the below for debugging output.
+# Do not output anything to stdout or stderr,
+# since it messes up ctest's interpretation
+# of the results.
+
 vim -nNes -i NONE -u NONE -U NONE \
-    -c "set runtimepath+=$DIR" \
     "${vim_args[@]}" \
-    </dev/null
+    </dev/null &>> "${debug:-/dev/null}"
 vimstatus="$?"
-#echo "Vim returned $vimstatus" 1>&2
 if [[ $vimstatus -eq 0 ]]; then
     cat "$fn"
+fi
+
+# Debug output cannot be included on stdout or stderr, because
+# ctest's regex check looks both of those places.  Therefore, dump to a
+# separate debugging file.
+if [[ $debug ]]
+then
+    echo "Current directory: $(pwd)" >> "$debug"
+    echo "Script directory: $DIR" >> "$debug"
+    echo Vim args: "${vim_args[@]}" | od -c >> "$debug"
+    echo "Vim returned $vimstatus" >> "$debug"
+    echo "Output was:" >> "$debug"
+    od -c "$fn" >> "$debug"
 fi
 
 rm -f "$fn"
