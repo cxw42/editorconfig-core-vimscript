@@ -1,6 +1,17 @@
 " util.vim: part of editorconfig-core-vimscript
 
-
+" ('a','b')->'a/b'; ('a/','b')->'a/b'.
+function! editorconfig_core#util#path_join(a, b)
+    " TODO shellescape/shellslash?
+    "echom 'Joining <' . a:a . '> and <' . a:b . '>'
+    "echom 'Length is ' . strlen(a:a)
+    "echom 'Last char is ' . char2nr(a:a[-1])
+    if a:a !~# '\v%(\/|\\)$'
+        return a:a . '/' . a:b
+    else
+        return a:a . a:b
+    endif
+endfunction
 
 " The following function is modified from
 " https://github.com/xolox/vim-misc/blob/master/autoload/xolox/misc/os.vim

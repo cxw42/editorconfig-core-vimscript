@@ -21,6 +21,10 @@ let s:OPTCRE = '\v\s*([^:=\s][^:=]*)\s*([:=])\s*(.*)$'
 function! editorconfig_core#ini#read_ini_file(config_filename, target_filename)
     let l:oldenc = &encoding
 
+    if !filereadable(a:config_filename)
+        return {}
+    endif
+
     try     " so &encoding will always be reset
         let &encoding = 'utf-8'     " so readfile() will strip BOM
         let l:lines = readfile(a:config_filename)

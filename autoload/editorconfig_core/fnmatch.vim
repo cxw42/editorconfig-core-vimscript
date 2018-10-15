@@ -280,6 +280,7 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
 "
     " Note: This throws away the backslash in '\.txt' on Cygwin, but that
     " makes sense since it's Windows under the hood.
+    " TODO set shellescape or shellslash?
     let l:localname = fnamemodify(a:name, ':p')
 
     if editorconfig_core#util#is_win()
