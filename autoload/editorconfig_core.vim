@@ -4,11 +4,11 @@
 
 " === CLI =============================================================== {{{1
 
-" For use from the command line.  Output settings for the current buffer to
+" For use from the command line.  Output settings for in_name to
 " the buffer named out_name.  If an optional argument is provided, it is the
 " name of the config file to use (default '.editorconfig').
 " TODO support multiple files
-function! editorconfig_core#currbuf_cli(out_name, ...)
+function! editorconfig_core#currbuf_cli(out_name, in_name, ...)
     let l:output = []
 
     let l:confname = '.editorconfig'
@@ -16,7 +16,7 @@ function! editorconfig_core#currbuf_cli(out_name, ...)
         let l:confname = a:1
     endif
 
-    let l:fullname = expand("%:p")
+    let l:fullname = a:in_name      " must be a full path
 
     " let l:output += ['Checking <' . l:fullname .'>']      " DEBUG
     " let l:output += ['Confname <' . l:confname .'>']      " DEBUG

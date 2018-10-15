@@ -11,7 +11,7 @@ let s:SECTCRE = '\v^\s*\[(%([^\\#;]|\\\#|\\\;|\\\])+)\]'
 " Allow any amount of whitespaces, followed by separator
 " (either ``:`` or ``=``), followed by any amount of whitespace and then
 " any characters to eol
-let s:OPTCRE = '\v\s*([^:=\s][^:=]*)\s*([:=])\s*(.*)$'
+let s:OPTCRE = '\v\s*([^:=[:space:]][^:=]*)\s*([:=])\s*(.*)$'
 
 " }}}2
 " === Main ============================================================== {{{1
@@ -77,7 +77,7 @@ function! s:parse(config_filename, target_filename, lines)
 
         " a section header or option header?
         " is it a section header?
-        " echom "Header? <" . l:line . ">"
+        "echom "Header? <" . l:line . ">"
         let l:mo = matchlist(l:line, s:SECTCRE)
         if len(l:mo)
             let l:sectname = l:mo[1]
@@ -98,6 +98,7 @@ function! s:parse(config_filename, target_filename, lines)
             if len(l:mo)
                 let l:optname = mo[1]
                 let l:optval = mo[3]
+                " echom 'Saw raw optname <' . l:optname . '>=<' . l:optval . '>'
                 if l:optval =~# '\v[;#]'
                     " ';' and '#' are comment delimiters only if
                     " preceded by a spacing character
@@ -115,7 +116,7 @@ function! s:parse(config_filename, target_filename, lines)
                 if !l:in_section && optname ==? 'root'
                     let l:is_root = (optval ==? 'true')
                 endif
-                "echom 'Saw option ' . l:optname . ' = ' . l:optval
+                " echom 'Saw option ' . l:optname . ' = ' . l:optval
                 if l:matching_section
                     let l:options[l:optname] = l:optval
                     "echom '  - stashed'

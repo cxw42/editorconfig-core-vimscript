@@ -58,9 +58,7 @@ vim_args=(
 )
 
 vim_args+=(
-    -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')"
-    -c 'q!'
-    -- "$1"
+    -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${1//\'/\'\'}', '${confname//\'/\'\'}')"
 )
 
 # Run editorconfig.  Thanks for options to
@@ -85,7 +83,8 @@ if [[ $debug ]]
 then
     echo "Current directory: $(pwd)" >> "$debug"
     echo "Script directory: $DIR" >> "$debug"
-    echo Vim args: "${vim_args[@]}" | od -c >> "$debug"
+    echo Vim args: "${vim_args[@]}" >> "$debug"
+    od -c <<<"${vim_args[@]}" >> "$debug"
     echo "Vim returned $vimstatus" >> "$debug"
     echo "Output was:" >> "$debug"
     od -c "$fn" >> "$debug"

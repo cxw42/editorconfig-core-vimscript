@@ -60,19 +60,26 @@ function! editorconfig_core#handler#get_configurations(target_filename, config_f
     let l:filename = fnamemodify(l:fullpath, ':t')
     let l:conf_files = s:get_filenames(l:path, a:config_filename)
 
+    " echom 'fullpath ' . l:fullpath
+    " echom 'path ' . l:path
+    " echom 'filename ' . l:filename
+
     let l:retval = {}
 
     " Attempt to find and parse every EditorConfig file in filetree
     for l:filename in l:conf_files
-        " echom 'Trying ' . l:filename
+        "echom 'Trying ' . l:filename
         let l:parsed = editorconfig_core#ini#read_ini_file(l:filename, a:target_filename)
         if !has_key(l:parsed, 'options')
             continue
         endif
+        " echom '  Has options'
 
         " Merge new EditorConfig file's options into current options
         let l:old_options = l:retval
         let l:retval = l:parsed.options
+        " echom 'Old options ' . string(l:old_options)
+        " echom 'New options ' . string(l:retval)
         call extend(l:retval, l:old_options, 'force')
 
         " Stop parsing if parsed file has a ``root = true`` option

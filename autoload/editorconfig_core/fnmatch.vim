@@ -291,7 +291,7 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
         let l:pat = a:pat
     endif
 
-    "echom 'Testing <' . l:localname . '> against <' . l:pat . '>'
+    " echom 'Testing <' . l:localname . '> against <' . l:pat . '>'
     return editorconfig_core#fnmatch#fnmatchcase(l:localname, l:pat)
 endfunction
 
