@@ -4,8 +4,10 @@
 
 " === Regexes =========================================================== {{{2
 " Regular expressions for parsing section headers and options.
-" Allow ``]`` and escaped ``;`` and ``#`` characters in section headers
-let s:SECTCRE = '\v^\s*\[(%([^\\#;]|\\\#|\\\;|\\\])+)\]'
+" Allow ``]`` and escaped ``;`` and ``#`` characters in section headers.
+" In fact, allow \ to escape any single character - it needs to cover at
+" least \ * ? [ ! ] { }.
+let s:SECTCRE = '\v^\s*\[(%([^\\#;]|\\.)+)\]'
 
 " Regular expression for parsing option name/values.
 " Allow any amount of whitespaces, followed by separator
