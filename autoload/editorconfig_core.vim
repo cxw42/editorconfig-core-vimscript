@@ -16,6 +16,11 @@ function! editorconfig_core#currbuf_cli(out_name, in_name, ...)
         let l:confname = a:1
     endif
 
+    if a:0 >= 2
+        execute 'redir! > ' . fnameescape(a:2)
+        echom 'Redirected to ' . a:2
+    endif
+
     let l:fullname = a:in_name      " must be a full path
 
     " let l:output += ['Checking <' . l:fullname .'>']      " DEBUG

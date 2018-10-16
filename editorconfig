@@ -24,10 +24,10 @@ get_dir
 
 # Debug output
 debug="${EDITORCONFIG_DEBUG}"   # Debug filename
-if [[ $debug != /* ]]; then     # Relative to this script unless it
+if [[ $debug && $debug != /* ]]; then     # Relative to this script unless it
     debug="${DIR}/${debug}"     # starts with a slash.  This is because
 fi                              # cwd is usually not $DIR when testing.
-[[ $debug ]] && date >> "$debug"
+[[ $debug ]] && echo "$(date) ==================================" >> "$debug"
 
 # Option processing
 confname='.editorconfig'
@@ -51,14 +51,20 @@ if (( "$#" < 1 )); then
     exit 1
 fi
 
-fn="$(mktemp)"      # Output file
+fn="$(mktemp)"      # Vim will write the settings into here.  ~stdout.
+script_output_fn="${debug:+$(mktemp)}"  # Vim's :messages.  ~stderr.
+
+cmd="call editorconfig_core#currbuf_cli("
+cmd+="'${fn//\'/\'\'}'"             # filename to put the settings in
+cmd+=", '${1//\'/\'\'}'"            # filename to get the settings for
+cmd+=", '${confname//\'/\'\'}'"     # config name (e.g., .editorconfig)
+[[ $debug ]] && cmd+=", '${script_output_fn//\'/\'\'}'" # where to put debug info
+cmd+=")"
+
 
 vim_args=(
     -c "set runtimepath+=$DIR"
-)
-
-vim_args+=(
-    -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${1//\'/\'\'}', '${confname//\'/\'\'}')"
+    -c "$cmd"
 )
 
 # Run editorconfig.  Thanks for options to
@@ -84,10 +90,14 @@ then
     echo "Current directory: $(pwd)" >> "$debug"
     echo "Script directory: $DIR" >> "$debug"
     echo Vim args: "${vim_args[@]}" >> "$debug"
-    od -c <<<"${vim_args[@]}" >> "$debug"
+    #od -c <<<"${vim_args[@]}" >> "$debug"
     echo "Vim returned $vimstatus" >> "$debug"
+    echo "Vim messages were: " >> "$debug"
+    cat "$script_output_fn" >> "$debug"
     echo "Output was:" >> "$debug"
     od -c "$fn" >> "$debug"
+
+    rm -f "$script_output_fn"
 fi
 
 rm -f "$fn"
