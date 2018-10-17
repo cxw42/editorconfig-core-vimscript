@@ -8,32 +8,32 @@
 " the buffer named out_name.  If an optional argument is provided, it is the
 " name of the config file to use (default '.editorconfig').
 " TODO support multiple files
-function! editorconfig_core#currbuf_cli(out_name, in_name, ...)
+"
+" filename (if any)
+" @param names  {Dictionary}    The names of the files to use for this run
+" @param job    {Dictionary}    What to do - same format as the input of
+"                               editorconfig_core#handler#get_configurations
+function! editorconfig_core#currbuf_cli(names, job) " out_name, in_name, ...
     let l:output = []
 
-    let l:confname = '.editorconfig'
-    if a:0 >= 1
-        let l:confname = a:1
+    if has_key(a:names, 'dump')
+        execute 'redir! > ' . fnameescape(a:names.dump)
+        echom 'Names: ' . string(a:names)
+        echom 'Job: ' . string(a:job)
     endif
 
-    if a:0 >= 2
-        execute 'redir! > ' . fnameescape(a:2)
-        echom 'Redirected to ' . a:2
+    let l:options = editorconfig_core#handler#get_configurations(a:job)
+
+    if has_key(a:names, 'dump')
+        echom 'Result: ' . string(l:options)
     endif
-
-    let l:fullname = a:in_name      " must be a full path
-
-    " let l:output += ['Checking <' . l:fullname .'>']      " DEBUG
-    " let l:output += ['Confname <' . l:confname .'>']      " DEBUG
-    let l:options = editorconfig_core#handler#get_configurations(l:fullname, l:confname)
-    " let l:output += ['Raw opts: ' . string(l:options)]    " DEBUG
 
     for [ l:key, l:value ] in items(l:options)
         let l:output += [ l:key . '=' . l:value ]
     endfor
 
     " Write the output file
-    call writefile(l:output, a:out_name)
+    call writefile(l:output, a:names.output)
 endfunction "editorconfig_core#currbuf_cli
 
 " }}}1

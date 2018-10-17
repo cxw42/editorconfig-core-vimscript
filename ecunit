@@ -23,14 +23,11 @@ get_dir
 
 ###
 
-confname='.editorconfig'
 globpat=
 initest=
 
 while getopts 'f:g:i:' opt ; do
     case "$opt" in
-        (f) confname="$OPTARG"
-            ;;
         # TODO support -b[, -h?]
 
         # Not in EditorConfig Core
@@ -58,15 +55,9 @@ if [[ $globpat ]]; then
         -c 'q!'
     )
     echo "Matching -${globpat}- against -${1}-" 1>&2
-elif [[ $initest ]]; then
-    echo "ini test not yet implemented" 1>&2
-    exit 1
 else
-    vim_args+=(
-        -c "call editorconfig_core#currbuf_cli('${fn//\'/\'\'}', '${confname//\'/\'\'}')"
-        -c 'q!'
-        -- "$1"
-    )
+    echo "not yet implemented" 1>&2
+    exit 1
 fi
 
 # Some extra debugging output to stderr - use ctest --output-on-failure

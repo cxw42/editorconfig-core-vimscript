@@ -42,8 +42,8 @@ endfunction
 
 " Find EditorConfig files and return all options matching target_filename.
 " Throws on failure.
-"    def get_configurations(self):
-function! editorconfig_core#handler#get_configurations(target_filename, config_filename)
+" @param job    {Dictionary}    required 'target'; optional 'config' and 'version'
+function! editorconfig_core#handler#get_configurations(job)
     " TODO? support VERSION checks?
 
 "    Special exceptions that may be raised by this function include:
@@ -51,14 +51,22 @@ function! editorconfig_core#handler#get_configurations(target_filename, config_f
 "    - ``PathError``: self.filepath is not a valid absolute filepath
 "    - ``ParsingError``: improperly formatted EditorConfig file found
 
-    if !s:check_assertions(a:config_filename, a:target_filename)
+    if has_key(a:job, 'config')
+        let l:config_filename = a:job.config
+    else
+        let l:config_filename = '.editorconfig'
+    endif
+
+    let l:target_filename = a:job.target
+
+    if !s:check_assertions(l:config_filename, l:target_filename)
         throw "Assertions failed"
     endif
 
-    let l:fullpath = fnamemodify(a:target_filename,':p')
+    let l:fullpath = fnamemodify(l:target_filename,':p')
     let l:path = fnamemodify(l:fullpath, ':h')
     let l:filename = fnamemodify(l:fullpath, ':t')
-    let l:conf_files = s:get_filenames(l:path, a:config_filename)
+    let l:conf_files = s:get_filenames(l:path, l:config_filename)
 
     " echom 'fullpath ' . l:fullpath
     " echom 'path ' . l:path
@@ -69,7 +77,7 @@ function! editorconfig_core#handler#get_configurations(target_filename, config_f
     " Attempt to find and parse every EditorConfig file in filetree
     for l:filename in l:conf_files
         "echom 'Trying ' . l:filename
-        let l:parsed = editorconfig_core#ini#read_ini_file(l:filename, a:target_filename)
+        let l:parsed = editorconfig_core#ini#read_ini_file(l:filename, l:target_filename)
         if !has_key(l:parsed, 'options')
             continue
         endif

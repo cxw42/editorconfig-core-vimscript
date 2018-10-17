@@ -30,7 +30,7 @@ fi                              # cwd is usually not $DIR when testing.
 [[ $debug ]] && echo "$(date) ==================================" >> "$debug"
 
 # Option processing
-confname='.editorconfig'
+confname=
 
 while getopts 'vf:' opt ; do
     case "$opt" in
@@ -54,12 +54,20 @@ fi
 fn="$(mktemp)"      # Vim will write the settings into here.  ~stdout.
 script_output_fn="${debug:+$(mktemp)}"  # Vim's :messages.  ~stderr.
 
-cmd="call editorconfig_core#currbuf_cli("
-cmd+="'${fn//\'/\'\'}'"             # filename to put the settings in
-cmd+=", '${1//\'/\'\'}'"            # filename to get the settings for
-cmd+=", '${confname//\'/\'\'}'"     # config name (e.g., .editorconfig)
-[[ $debug ]] && cmd+=", '${script_output_fn//\'/\'\'}'" # where to put debug info
-cmd+=")"
+cmd="call editorconfig_core#currbuf_cli({"
+
+# Names
+cmd+="'output':'${fn//\'/\'\'}', "
+    # filename to put the settings in
+[[ $debug ]] && cmd+=" 'dump':'${script_output_fn//\'/\'\'}', "
+    # where to put debug info
+
+# Job
+cmd+="}, {'target':'${1//\'/\'\'}', "
+    # filename to get the settings for
+[[ $confname ]] && cmd+="'config':'${confname//\'/\'\'}', "
+    # config name (e.g., .editorconfig)
+cmd+="})"
 
 
 vim_args=(
