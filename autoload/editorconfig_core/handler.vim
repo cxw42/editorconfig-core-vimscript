@@ -57,6 +57,12 @@ function! editorconfig_core#handler#get_configurations(job)
         let l:config_filename = '.editorconfig'
     endif
 
+    if has_key(a:job, 'version')
+        let l:version = a:job.version
+    else
+        let l:version = editorconfig_core#version()
+    endif
+
     let l:target_filename = a:job.target
 
     if !s:check_assertions(l:config_filename, l:target_filename)

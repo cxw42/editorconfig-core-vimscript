@@ -62,9 +62,16 @@ cmd+="'output':'${fn//\'/\'\'}', "
 [[ $debug ]] && cmd+=" 'dump':'${script_output_fn//\'/\'\'}', "
     # where to put debug info
 
-# Job
-cmd+="}, {'target':'${1//\'/\'\'}', "
+# Filenames to get the settings for
+cmd+="'target':["
+for f in "$@" ; do
+    cmd+="'${f//\'/\'\'}', "
+done
+cmd+="],"
     # filename to get the settings for
+
+# Job
+cmd+="}, {"
 [[ $confname ]] && cmd+="'config':'${confname//\'/\'\'}', "
     # config name (e.g., .editorconfig)
 cmd+="})"
