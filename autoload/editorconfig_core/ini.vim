@@ -70,7 +70,7 @@ function! s:parse(config_filename, target_filename, lines)
         let l:lineno = l:lineno + 1
 
         " comment or blank line?
-        if substitute(l:line, '\v^\s+|\s$','','g') ==# ''
+        if editorconfig_core#util#strip(l:line) ==# ''
             continue
         endif
         if l:line =~# '\v^[#;]'
@@ -109,7 +109,7 @@ function! s:parse(config_filename, target_filename, lines)
                         let l:optval = l:m[1]
                     endif
                 endif
-                let l:optval = substitute(l:optval, '\v^\s+|\s+$', '', 'g')
+                let l:optval = editorconfig_core#util#strip(l:optval)
                 " allow empty values
                 if l:optval ==? '""'
                     let l:optval = ''

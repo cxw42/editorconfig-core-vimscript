@@ -38,3 +38,7 @@ function! editorconfig_core#util#is_win()
   " Returns 1 (true) when on Microsoft Windows, 0 (false) otherwise.
   return has('win16') || has('win32') || has('win64')
 endfunction
+
+function! editorconfig_core#util#strip(s)
+    return substitute(a:s, '\v^\s+|\s+$','','g')
+endfunction

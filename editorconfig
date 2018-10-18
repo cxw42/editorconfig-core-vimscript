@@ -31,8 +31,10 @@ fi                              # cwd is usually not $DIR when testing.
 
 # Option processing
 confname=
+ver=
 
-while getopts 'vf:' opt ; do
+# TODO support -h, --help, --version?
+while getopts 'vf:b:' opt ; do
     case "$opt" in
         (v) echo "EditorConfig VimScript Core Version 0.12.2"
             exit 0
@@ -40,8 +42,9 @@ while getopts 'vf:' opt ; do
 
         (f) confname="$OPTARG"
             ;;
-        # TODO support -b[, -h?]
 
+        (b) ver="$OPTARG"
+            ;;
     esac
 done
 
@@ -79,6 +82,8 @@ cmd+="],"
 cmd+="}, {"
 [[ $confname ]] && cmd+="'config':'${confname//\'/\'\'}', "
     # config name (e.g., .editorconfig)
+[[ $ver ]] && cmd+="'version':'${ver//\'/\'\'}', "
+    # version number we should behave as
 cmd+="})"
 
 

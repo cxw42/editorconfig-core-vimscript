@@ -19,26 +19,7 @@ function! s:get_filenames(path, config_filename)
     return l:path_list
 endfunction
 
-" === Python source ===================================================== {{{1
-
-"class EditorConfigHandler(object):
-
-"    """
-"    Allows locating and parsing of EditorConfig files for given filename
-
-"    In addition to the constructor a single public method is provided,
-"    ``get_configurations`` which returns the EditorConfig options for
-"    the ``filepath`` specified to the constructor.
-
-"    """
-
-"    def __init__(self, filepath, conf_filename='.editorconfig',
-"                 version=VERSION):
-"        """Create EditorConfigHandler for matching given filepath"""
-"        self.filepath = filepath
-"        self.conf_filename = conf_filename
-"        self.version = version
-"        self.options = None
+" === Main ============================================================== {{{1
 
 " Find EditorConfig files and return all options matching target_filename.
 " Throws on failure.
@@ -53,7 +34,7 @@ function! editorconfig_core#handler#get_configurations(job)
 
     let l:job = deepcopy(a:job)
     if has_key(l:job, 'config')
-        let l:config_filename = a:job.config
+        let l:config_filename = l:job.config
     else
         let l:config_filename = '.editorconfig'
         let l:job.config = l:config_filename
@@ -66,9 +47,10 @@ function! editorconfig_core#handler#get_configurations(job)
         let l:job.version = l:version
     endif
 
-    let l:target_filename = a:job.target
+    let l:target_filename = l:job.target
 
-    if !s:check_assertions(l:config_filename, l:target_filename)
+    echom 'Beginning job ' . string(l:job)
+    if !s:check_assertions(l:job)
         throw "Assertions failed"
     endif
 
@@ -109,8 +91,7 @@ function! editorconfig_core#handler#get_configurations(job)
     return l:retval
 endfunction
 
-function! s:check_assertions(config_filename, target_filename)
-    return 1
+function! s:check_assertions(job)
 " TODO
 "    """Raise error if filepath or version have invalid values"""
 
@@ -118,10 +99,20 @@ function! s:check_assertions(config_filename, target_filename)
 "    if not os.path.isabs(self.filepath):
 "        raise PathError("Input file must be a full path name.")
 
-"    # Raise ``VersionError`` if version specified is greater than current
-"    if self.version is not None and self.version[:3] > VERSION[:3]:
-"        raise VersionError("Required version is greater than the current version.")
+    " Throw if version specified is greater than current
+    let l:v = a:job.version
+    let l:us = editorconfig_core#version()
+    " echom 'Comparing requested version ' . string(l:v) .
+    "     \ ' to our version ' . string(l:us)
+    if l:v[0] > l:us[0] || l:v[1] > l:us[1] || l:v[2] > l:us[2]
+        throw 'Required version ' . string(l:v) .
+                    \ ' is greater than the current version ' . string(l:us)
+    endif
+
+    return 1    " All OK if we got here
 endfunction
+
+" }}}1
 
 " Preprocess option values for consumption by plugins.  Modifies its argument
 " in place.
@@ -158,7 +149,6 @@ function! s:preprocess_values(job, opts)
     endif
 endfunction
 
-" }}}1
 
 " === Copyright notices ================================================= {{{2
 """"EditorConfig file handler

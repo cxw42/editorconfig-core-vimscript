@@ -2,6 +2,7 @@
 " editorconfig-core-vimscript.
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
+" The version we are, i.e., the latest version we support
 function! editorconfig_core#version()
     return [0,12,2]
 endfunction
@@ -25,12 +26,32 @@ endfunction
 
 function! editorconfig_core#currbuf_cli(names, job) " out_name, in_name, ...
     let l:output = []
+
+    " Preprocess the job
     let l:job = deepcopy(a:job)
+
+    if has_key(l:job, 'version')    " string to list
+        let l:ver = split(editorconfig_core#util#strip(l:job.version), '\v\.')
+        for l:idx in range(len(l:ver))
+            let l:ver[l:idx] = str2nr(l:ver[l:idx])
+        endfor
+
+        let l:job.version = l:ver
+    endif
+
+    " TODO provide version output from here instead of the shell script
+"    if string(a:names) ==? 'version'
+"        return
+"    endif
+"
+    if type(a:names) != type({}) || type(a:job) != type({})
+        throw 'Need two Dictionary arguments'
+    endif
 
     if has_key(a:names, 'dump')
         execute 'redir! > ' . fnameescape(a:names.dump)
         echom 'Names: ' . string(a:names)
-        echom 'Job: ' . string(a:job)
+        echom 'Job: ' . string(l:job)
     endif
 
     if type(a:names['target']) == type([])
