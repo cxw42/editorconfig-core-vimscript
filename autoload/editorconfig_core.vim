@@ -3,7 +3,7 @@
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
 function! editorconfig_core#version()
-    return '0.12.2'
+    return [0,12,2]
 endfunction
 
 " === CLI =============================================================== {{{1

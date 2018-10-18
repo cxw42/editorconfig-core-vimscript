@@ -51,6 +51,11 @@ if (( "$#" < 1 )); then
     exit 1
 fi
 
+if [[ $1 = '-' ]]; then
+    echo "Reading filenames from stdin not yet supported" 1>&2  # TODO
+    exit 1
+fi
+
 fn="$(mktemp)"      # Vim will write the settings into here.  ~stdout.
 script_output_fn="${debug:+$(mktemp)}"  # Vim's :messages.  ~stderr.
 

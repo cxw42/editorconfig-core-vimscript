@@ -51,16 +51,19 @@ function! editorconfig_core#handler#get_configurations(job)
 "    - ``PathError``: self.filepath is not a valid absolute filepath
 "    - ``ParsingError``: improperly formatted EditorConfig file found
 
-    if has_key(a:job, 'config')
+    let l:job = deepcopy(a:job)
+    if has_key(l:job, 'config')
         let l:config_filename = a:job.config
     else
         let l:config_filename = '.editorconfig'
+        let l:job.config = l:config_filename
     endif
 
-    if has_key(a:job, 'version')
-        let l:version = a:job.version
+    if has_key(l:job, 'version')
+        let l:version = l:job.version
     else
         let l:version = editorconfig_core#version()
+        let l:job.version = l:version
     endif
 
     let l:target_filename = a:job.target
@@ -102,7 +105,7 @@ function! editorconfig_core#handler#get_configurations(job)
         endif
     endfor
 
-    call s:preprocess_values(l:retval)
+    call s:preprocess_values(l:job, l:retval)
     return l:retval
 endfunction
 
@@ -122,33 +125,37 @@ endfunction
 
 " Preprocess option values for consumption by plugins.  Modifies its argument
 " in place.
-function! s:preprocess_values(options)
+function! s:preprocess_values(job, opts)
 
-"    opts = self.options
+    " Lowercase option value for certain options
+    for l:name in ['end_of_line', 'indent_style', 'indent_size',
+                \'insert_final_newline', 'trim_trailing_whitespace',
+                \'charset']
+        if has_key(a:opts, l:name)
+            let a:opts[l:name] = tolower(a:opts[l:name])
+        endif
+    endfor
 
-"    # Lowercase option value for certain options
-"    for name in ["end_of_line", "indent_style", "indent_size",
-"                 "insert_final_newline", "trim_trailing_whitespace",
-"                 "charset"]:
-"        if name in opts:
-"            opts[name] = opts[name].lower()
+    " Set indent_size to "tab" if indent_size is unspecified and
+    " indent_style is set to "tab", provided we are at least v0.10.0.
+    if get(a:opts, 'indent_style', '') ==? "tab" &&
+                \ !has_key(a:opts, 'indent_size') &&
+                \ ( a:job.version[0]>0 || a:job.version[1] >=10 )
+        let a:opts['indent_size'] = 'tab'
+    endif
 
-"    # Set indent_size to "tab" if indent_size is unspecified and
-"    # indent_style is set to "tab".
-"    if (opts.get("indent_style") == "tab" and
-"            not "indent_size" in opts and self.version >= (0, 10, 0)):
-"        opts["indent_size"] = "tab"
+    " Set tab_width to indent_size if indent_size is specified and
+    " tab_width is unspecified
+    if has_key(a:opts, 'indent_size') && !has_key(a:opts, 'tab_width') &&
+                \ get(a:opts, 'indent_size', '') !=? "tab"
+        let a:opts['tab_width'] = a:opts['indent_size']
+    endif
 
-"    # Set tab_width to indent_size if indent_size is specified and
-"    # tab_width is unspecified
-"    if ("indent_size" in opts and "tab_width" not in opts and
-"            opts["indent_size"] != "tab"):
-"        opts["tab_width"] = opts["indent_size"]
-
-"    # Set indent_size to tab_width if indent_size is "tab"
-"    if ("indent_size" in opts and "tab_width" in opts and
-"            opts["indent_size"] == "tab"):
-"        opts["indent_size"] = opts["tab_width"]
+    " Set indent_size to tab_width if indent_size is "tab"
+    if has_key(a:opts, 'indent_size') && has_key(a:opts, 'tab_width') &&
+                \ get(a:opts, 'indent_size', '') ==? "tab"
+        let a:opts['indent_size'] = a:opts['tab_width']
+    endif
 endfunction
 
 " }}}1
