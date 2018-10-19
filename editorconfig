@@ -30,25 +30,44 @@ fi                              # cwd is usually not $DIR when testing.
 [[ $debug ]] && echo "$(date) ==================================" >> "$debug"
 
 # Option processing
-confname=
-ver=
 
-# TODO support -h, --help, --version?
-while getopts 'vf:b:' opt ; do
-    case "$opt" in
-        (v) echo "EditorConfig VimScript Core Version 0.12.2"
-            exit 0
-            ;;
+. "${DIR}/shflags"
 
-        (f) confname="$OPTARG"
-            ;;
+flags_setLoggingLevel 0
+DEFINE_string 'confname' '.editorconfig' 'name of the editorconfig files' 'f'
+DEFINE_string 'emuver' '' 'version of editorconfig to emulate' 'b'
+DEFINE_boolean 'version' false 'print the version of editorconfig' 'v'
 
-        (b) ver="$OPTARG"
-            ;;
-    esac
-done
+FLAGS "$@" || exit $?
+eval set -- "${FLAGS_ARGV}"
 
-shift $(( $OPTIND - 1 ))
+cat <<EOF
+Confname: -${FLAGS_confname}-
+Emulate version: -${FLAGS_emuver}-
+EOF
+if [[ $FLAGS_version -eq $FLAGS_TRUE ]]; then
+    echo "... and print version"
+else
+    echo "... but don't print version"
+fi
+
+exit
+## TODO support -h, --help, --version?
+#while getopts 'vf:b:' opt ; do
+#    case "$opt" in
+#        (v) echo "EditorConfig VimScript Core Version 0.12.2"
+#            exit 0
+#            ;;
+#
+#        (f) confname="$OPTARG"
+#            ;;
+#
+#        (b) ver="$OPTARG"
+#            ;;
+#    esac
+#done
+#
+#shift $(( $OPTIND - 1 ))
 
 if (( "$#" < 1 )); then
     exit 1
