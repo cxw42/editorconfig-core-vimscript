@@ -32,12 +32,12 @@ fi                              # cwd is usually not $DIR when testing.
 # Option processing
 confname=
 ver=
+print_ver=
 
-# TODO support -h, --help, --version?
-while getopts 'vf:b:' opt ; do
+# TODO support -h, --help
+while getopts 'vf:b:-:' opt ; do
     case "$opt" in
-        (v) echo "EditorConfig VimScript Core Version 0.12.2"
-            exit 0
+        (v) print_ver=1
             ;;
 
         (f) confname="$OPTARG"
@@ -45,10 +45,20 @@ while getopts 'vf:b:' opt ; do
 
         (b) ver="$OPTARG"
             ;;
+
+        (-) case "$OPTARG" in   # hacky long-option processing
+                version)    print_ver=1
+                            ;;
+            esac
     esac
 done
 
 shift $(( $OPTIND - 1 ))
+
+if [[ $print_ver ]]; then
+    echo "EditorConfig VimScript Core Version 0.12.2"
+    exit 0
+fi
 
 if (( "$#" < 1 )); then
     exit 1
