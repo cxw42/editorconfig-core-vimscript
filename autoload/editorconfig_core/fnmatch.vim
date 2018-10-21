@@ -86,10 +86,13 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
 
     let l:result = ''
     if !l:nested
-        let l:result = '\v%(^|\/)'  " \v = very magic
-        " Glob anchors at the start of the pattern or at a slash.  For
-        " example, 'o/*.txt' doesn't match 'foo/bar.txt', even though
-        " 'foo' ends with an 'o'.
+        let l:result = '\v'     " \v = very magic
+        if a:pat[0] !=? '/'
+            let l:result .= '%(^|\/)'
+            " Glob anchors at the start of the pattern or at a slash.  For
+            " example, 'o/*.txt' doesn't match 'foo/bar.txt', even though
+            " 'foo' ends with an 'o'.
+        endif
     endif
         " Note: the Python sets MULTILINE and DOTALL, but Vim has \_.
         " instead of DOTALL, and \_^ / \_$ instead of MULTILINE.
@@ -156,7 +159,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
             if l:in_brackets
                 let l:result .= l:current_char
             else
-                let l:result .= '\' + l:current_char
+                let l:result .= '\' . l:current_char
             endif
 
         elseif l:current_char ==# ']'
@@ -283,7 +286,7 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
     " TODO set shellescape or shellslash?
     let l:localname = fnamemodify(a:name, ':p')
 
-    if editorconfig_core#util#is_win()
+    if editorconfig_core#util#is_win()      " normalize
         let l:localname = substitute(tolower(l:localname), '\v\\', '/', 'g')
         let l:pat = tolower(a:pat)
     else
@@ -304,6 +307,7 @@ function! editorconfig_core#fnmatch#fnmatchcase(name, pat)
 "    """
 "
     let [regex, num_groups] = s:cached_translate(a:pat)
+    " echom '  fnmatch: regex ' . regex
     let l:match_groups = matchlist(a:name, regex)[1:]   " [0] = full match
     if len(l:match_groups) == 0
         return 0

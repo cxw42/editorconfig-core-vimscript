@@ -166,12 +166,15 @@ function! s:matches_filename(config_filename, target_filename, glob)
 "    config_dirname = normpath(dirname(config_filename)).replace(sep, '/')
     let l:config_dirname = fnamemodify(a:config_filename, ':p:h') . '/'
     if editorconfig_core#util#is_win()
-        let l:config_dirname = substitute(l:config_dirname, '\\', '/', 'g')
+        let l:config_dirname = tolower(substitute(l:config_dirname, '\\', '/', 'g'))
     endif
+    " echom 'matches_filename: config_dirname is ' . l:config_dirname
 
     let l:glob = substitute(a:glob, '\v\\([#;])', '\1', 'g')
-    if l:glob[0] ==# '/'
-        let l:glob = l:glob[1:]     " trim leading slash
+    if stridx(l:glob, '/') != -1
+        if l:glob[0] ==# '/'
+            let l:glob = l:glob[1:]     " trim leading slash
+        endif
         let l:glob = l:config_dirname . l:glob
     else
         let l:glob = '**/' . l:glob
