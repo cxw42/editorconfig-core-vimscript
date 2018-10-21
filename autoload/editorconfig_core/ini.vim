@@ -2,7 +2,7 @@
 " editorconfig-core-vimscript.  Modifed from the Python core's ini.py.
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
-" === Regexes =========================================================== {{{2
+" === Constants, including regexes ====================================== {{{2
 " Regular expressions for parsing section headers and options.
 " Allow ``]`` and escaped ``;`` and ``#`` characters in section headers.
 " In fact, allow \ to escape any single character - it needs to cover at
@@ -14,6 +14,10 @@ let s:SECTCRE = '\v^\s*\[(%([^\\#;]|\\.)+)\]'
 " (either ``:`` or ``=``), followed by any amount of whitespace and then
 " any characters to eol
 let s:OPTCRE = '\v\s*([^:=[:space:]][^:=]*)\s*([:=])\s*(.*)$'
+
+let s:MAX_SECTION_NAME = 4096
+let s:MAX_PROPERTY_NAME = 50
+let s:MAX_PROPERTY_VALUE = 255
 
 " }}}2
 " === Main ============================================================== {{{1
@@ -84,8 +88,13 @@ function! s:parse(config_filename, target_filename, lines)
         if len(l:mo)
             let l:sectname = l:mo[1]
             let l:in_section = 1
-            let l:matching_section = s:matches_filename(
-                \ a:config_filename, a:target_filename, l:sectname)
+            if strlen(l:sectname) > s:MAX_SECTION_NAME
+                " Section name too long => ignore the section
+                let l:matching_section = 0
+            else
+                let l:matching_section = s:matches_filename(
+                    \ a:config_filename, a:target_filename, l:sectname)
+            endif
             " echom 'In section ' . l:sectname . ', which ' .
             "     \ (l:matching_section ? 'matches' : 'does not match')
             "     \ ' file ' . a:target_filename . ' (config ' .
@@ -119,7 +128,9 @@ function! s:parse(config_filename, target_filename, lines)
                     let l:is_root = (optval ==? 'true')
                 endif
                 " echom 'Saw option ' . l:optname . ' = ' . l:optval
-                if l:matching_section
+                if l:matching_section &&
+                            \ strlen(l:optname) <= s:MAX_PROPERTY_NAME &&
+                            \ strlen(l:optval) <= s:MAX_PROPERTY_VALUE
                     let l:options[l:optname] = l:optval
                     "echom '  - stashed'
                 endif
