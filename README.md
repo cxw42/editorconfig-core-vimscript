@@ -5,16 +5,14 @@ EditorConfig VimScript Core provides the same functionality as the
 
 # Usage
 
+**Note:** This is not ready for use yet!  It will be soon!
+
  - From the command line: `./editorconfig [opts] <filename>`
  - From Vim: clone or unzip into `~/.vim/bundle/editorconfig-core-vimscript`
    and use Pathogen, or otherwise install using your favorite git repo tool.
 
 The command line program requires a bash shell.  However, it is only used
 to run tests.  A bash shell is not required to use this core in Vim.
-
-*Caution:* Before you install this, make sure you *uninstall* the
-editorconfig-vim-plugin.  That plugin uses the Python core.  This core
-is fully integrated into Vim and does not require a separate plugin.
 
 # EditorConfig Project
 
