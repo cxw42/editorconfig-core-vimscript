@@ -10,8 +10,15 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 project(editorconfig-core-vimscript NONE)
 
 enable_testing()
-set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/editorconfig")
-set(EDITORCONFIG_UNIT_TEST_CMD "${CMAKE_SOURCE_DIR}/ecunit")
+if((NOT WIN32) OR CYGWIN)
+    set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/editorconfig")
+    set(EDITORCONFIG_UNIT_TEST_CMD "${CMAKE_SOURCE_DIR}/ecunit")
+else()
+    # Somehow the extra \\ get changed to / in the CTestTestfiles,
+    # so I am using an extra BAT file to invoke powershell.
+    #set(EDITORCONFIG_CMD "powershell -executionpolicy bypass -file \\\"${CMAKE_SOURCE_DIR}\\editorconfig.ps1\\\"")
+    set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/editorconfig.bat")
+endif()
 
 add_subdirectory(unittests)
 add_subdirectory(tests)
