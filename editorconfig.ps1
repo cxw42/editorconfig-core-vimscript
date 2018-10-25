@@ -14,6 +14,51 @@ param (
         # https://docs.microsoft.com/en-us/previous-versions/technet-magazine/jj554301(v=msdn.10)
 )
 
+$VIM = "C:\Program Files (x86)\Vim\vim74\vim.exe"   # TODO don't hardcode
+
+# Run a process with the given arguments.  TODO accept arguments.
+function run_process()
+{
+    param(
+        [Parameter(Mandatory=$true, Position=0)][string]$run,
+        [string[]]$argv,
+        [string]$extrapath,
+        [string]$stdout,        # Redirect stdout to this file
+        [string]$stderr         # Redirect stderr to this file
+    )
+
+    $si = new-object Diagnostics.ProcessStartInfo
+    if($extrapath) {
+        $si.EnvironmentVariables['path']+=";${extrapath}"
+    }
+    $si.FileName=$run
+    $si.Arguments=$argv;
+    $si.UseShellExecute=$false
+    # DEBUG  $si.RedirectStandardInput=$true
+    $si.RedirectStandardOutput=!!$stdout;
+    $si.RedirectStandardError=!!$stderr;
+
+    $p = [Diagnostics.Process]::Start($si)
+    # DEBUG $p.StandardInput.Close()        # < /dev/null
+
+    $p.WaitForExit()
+    $retval = $p.ExitCode
+
+    if($stdout) {
+        $p.StandardOutput.ReadToEnd() | `
+            Out-File -FilePath $stdout -Encoding utf8 -Append
+    }
+
+    if($stderr) {
+        $p.StandardError.ReadToEnd() | `
+            Out-File -FilePath $stderr -Encoding utf8 -Append
+    }
+
+    $p.Close()
+
+    return $retval
+}
+
 # Get the directory of this script.  From
 # https://stackoverflow.com/a/5466355/2877364 by
 # https://stackoverflow.com/users/23283/jaredpar
@@ -60,37 +105,51 @@ if($files[0] -eq '-') {
     exit 1
 }
 
-### fn="$(mktemp)"      # Vim will write the settings into here.  ~stdout.
-### script_output_fn="${debug:+$(mktemp)}"  # Vim's :messages.  ~stderr.
+# Escape a string for Vim
+function vesc($str) {
+    return "'" + ($str -replace "'","''") + "'"
+}
 
-### cmd="call editorconfig_core#currbuf_cli({"
+$fn=[System.IO.Path]::GetTempFileName();    # Vim will write the settings into here.  ~stdout.
+$script_output_fn = ''
+if($debug) {
+    $script_output_fn = [System.IO.Path]::GetTempFileName()
+}
 
-### # Names
-### cmd+="'output':'${fn//\'/\'\'}', "
-###     # filename to put the settings in
-### [[ $debug ]] && cmd+=" 'dump':'${script_output_fn//\'/\'\'}', "
-###     # where to put debug info
+$cmd="call editorconfig_core#currbuf_cli({"
 
-### # Filenames to get the settings for
-### cmd+="'target':["
-### for f in "$@" ; do
-###     cmd+="'${f//\'/\'\'}', "
-### done
-### cmd+="],"
-###     # filename to get the settings for
+# Names
+$cmd += "'output':" + (vesc($fn)) + ", "
+    # filename to put the settings in
+if($debug) {
+    $cmd += " 'dump':" + (vesc($script_output_fn)) + ", "
+    # where to put debug info
+}
 
-### # Job
-### cmd+="}, {"
-### [[ $config_name ]] && cmd+="'config':'${config_name//\'/\'\'}', "
-###     # config name (e.g., .editorconfig)
-### [[ $set_version ]] && cmd+="'version':'${set_version//\'/\'\'}', "
-###     # version number we should behave as
-### cmd+="})"
+# Filenames to get the settings for
+$cmd += "'target':["
+ForEach ($item in $files) {
+    $cmd += (vesc($item)) + ", "
+}
+$cmd += "],"
+    # filename to get the settings for
 
-### vim_args=(
-###     -c "set runtimepath+=$DIR"
-###     -c "$cmd"
-### )
+# Job
+$cmd += "}, {"
+if($config_name) { $cmd += "'config':" + (vesc($config_name)) + ", " }
+    # config name (e.g., .editorconfig)
+if($set_version) { $cmd += "'version':" + (vesc($set_version)) + ", " }
+    # version number we should behave as
+$cmd += "})"
+
+$cmd =':q!'  # DEBUG
+echo $cmd
+$vim_args = @(
+    '-c', "set runtimepath += $DIR",
+    #'-c', 'echom &rtp',    # doesn't show up in the output
+    #'-c', 'echo "yay"',    # ditto
+    '-c', $cmd
+)
 
 # Run editorconfig.  Thanks for options to
 # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
@@ -99,33 +158,44 @@ if($files[0] -eq '-') {
 # since it messes up ctest's interpretation
 # of the results.
 
-### vim -nNes -i NONE -u NONE -U NONE \
-###     "${vim_args[@]}" \
-###     </dev/null &>> "${debug:-/dev/null}"
-### vimstatus="$?"
-### if [[ $vimstatus -eq 0 ]]; then
-###     cat "$fn"
-### fi
+$basic_args='-nNes','-i','NONE','-u','NONE','-U','NONE'
+
+echo "Running ${VIM}"
+$vimstatus = run_process $VIM -argv ($basic_args+$vim_args) `
+    -stdout $debug -stderr $debug
+echo "Done running"
+
+if($vimstatus -eq 0) {
+    cat $debug
+}
 
 # Debug output cannot be included on stdout or stderr, because
 # ctest's regex check looks both of those places.  Therefore, dump to a
 # separate debugging file.
 
-### if [[ $debug ]]
-### then
-###     echo "Current directory: $(pwd)" >> "$debug"
-###     echo "Script directory: $DIR" >> "$debug"
+if($debug) {
+    echo "Current directory" | D
+    (get-item -path '.').FullName | D
+    echo "Script directory: $DIR" | D
 ###     echo Vim args: "${vim_args[@]}" >> "$debug"
 ###     #od -c <<<"${vim_args[@]}" >> "$debug"
-###     echo "Vim returned $vimstatus" >> "$debug"
-###     echo "Vim messages were: " >> "$debug"
-###     cat "$script_output_fn" >> "$debug"
-###     echo "Output was:" >> "$debug"
-###     od -c "$fn" >> "$debug"
-###
-###     rm -f "$script_output_fn"
-### fi
+    echo "Vim returned $vimstatus" | D
+    echo "Vim messages were: " | D
+    cat $script_output_fn | D
+    echo "Output was:" | D
 
-### rm -f "$fn"
+    # Thanks to https://www.itprotoday.com/powershell/get-hex-dumps-files-powershell
+    Get-Content "C:\Windows\notepad.exe" -Encoding Byte ` -ReadCount 16 | ForEach-Object {
+        $output = ""
+        foreach ( $byte in $_ ) {
+            $output += "{0:X2} " -f $byte
+        }
+    } | D
+
+    del -Force $script_output_fn
+}
+
+del -Force $fn
 
 ### exit "$vimstatus"
+# vi: set ts=4 sts=4 sw=4 et ai:
