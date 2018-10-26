@@ -14,99 +14,7 @@ param (
         # https://docs.microsoft.com/en-us/previous-versions/technet-magazine/jj554301(v=msdn.10)
 )
 
-$VIM = "C:\Program Files (x86)\Vim\vim74\vim.exe"   # TODO don't hardcode
-
-# Get the directory of this script.  From
-# https://stackoverflow.com/a/5466355/2877364 by
-# https://stackoverflow.com/users/23283/jaredpar
-
-$DIR = $PSScriptRoot
-
-$debug=$env:EDITORCONFIG_DEBUG  # Debug filename
-
-if($debug -and ($debug -notmatch '^/')) {
-    # Relative to this script unless it starts with a slash.  This is because
-    # cwd is usually not $DIR when testing.
-    $debug="${DIR}/${debug}"
-}
-
-### Helpers ============================================================
-
-# Append a string to $debug in UTF-8 rather than the default UTF-16
-filter D($file = $debug) {
-    if($debug) {
-        echo $_ | Out-File -FilePath $file -Encoding utf8 -Append
-    }
-}
-
-# Escape a string for Vim
-function vesc($str) {
-    return "'" + ($str -replace "'","''") + "'"
-}
-
-# Escape a string for a command-line argument.
-# See https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.arguments?view=netframework-4.7.2
-function argesc($arg) {
-    return '"' + ($arg -replace '"','"""') + '"'
-}
-
-### Runner =============================================================
-
-# Run a process with the given arguments.  TODO accept arguments.
-function run_process
-{
-    param(
-        [Parameter(Mandatory=$true, Position=0)][string]$run,
-        [string]$extrapath,
-        [string]$stdout,        # Redirect stdout to this file
-        [string]$stderr,        # Redirect stderr to this file
-        [string[]]$argv         # Arguments to $run
-    )
-    $si = new-object Diagnostics.ProcessStartInfo
-    if($extrapath) {
-        $si.EnvironmentVariables['path']+=";${extrapath}"
-    }
-    $si.FileName=$run
-
-    # Stringify the arguments (blech)
-    $argstr = $argv | % { (argesc $_) + ' ' }
-    $si.Arguments = $argstr;
-
-    if($debug) { write-warning "Running process $run with arguments >>$argstr<<" }
-
-    $si.UseShellExecute=$false
-    # DEBUG  $si.RedirectStandardInput=$true
-    if($stdout) {
-        if($debug) { write-warning "Saving stdout to ${stdout}" }
-        $si.RedirectStandardOutput=$true;
-    }
-    if($stderr) {
-        if($debug) { write-warning "Saving stderr to ${stderr}" }
-        $si.RedirectStandardError=$true;
-    }
-
-    $p = [Diagnostics.Process]::Start($si)
-    # DEBUG $p.StandardInput.Close()        # < /dev/null
-
-    $p.WaitForExit()
-    $retval = $p.ExitCode
-
-    if($stdout) {
-        echo "Standard output:" | D $stdout
-        $p.StandardOutput.ReadToEnd() | `
-            Out-File -FilePath $stdout -Encoding utf8 -Append
-    }
-
-    if($stderr) {
-        echo "Standard error:" | D $stderr
-        $p.StandardError.ReadToEnd() | `
-            Out-File -FilePath $stderr -Encoding utf8 -Append
-    }
-
-    $p.Close()
-
-    return $retval
-}
+. .\ecvimlib.ps1
 
 ### Main ===============================================================
 
@@ -115,11 +23,25 @@ if($debug) {
     Get-Date -format F | D
 
     echo "Running in       $DIR"                | D
+    echo "Vim executable:  $VIM"                | D
     echo "report version?  $report_version"     | D
     echo "set version to:  $set_version"        | D
     echo "config filename: $config_name"        | D
     echo "Filenames:       $files"              | D
+    echo "Args:            $args"               | D
 }
+
+# NOTE: function Main is an experiment that didn't work.  I wanted to turn
+# -version into --version.  However, splatting only fills positional parameters,
+# not named switches.  I may be able to do it by splatting hashes or by checking
+# the positional parameters.  See
+# https://stackoverflow.com/q/38009106/2877364 by
+# https://stackoverflow.com/users/3719459/paebbels and
+# https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_splatting?view=powershell-6#splatting-command-parameters.
+
+### The main function.  Put here so we can turn -version into --version.
+##function Main
+##{
 
 if($report_version) {
     echo "EditorConfig VimScript Core Version 0.12.2"
@@ -234,4 +156,25 @@ if($debug) {
 del -Force $fn
 
 exit $vimstatus
+
+##} #Main()
+##
+##if($args.length -eq 0) {
+##    Main
+##
+##} else {    # Convert --version to -version
+##    $myargs = 1..($args.length)
+##    for($argidx=0; $argidx -lt $args.length; ++$argidx) {
+##        write-warning "Checking $($args[$argidx])"
+##        if($args[$argidx] -eq '--version') {
+##            write-warning "Updating"
+##            $myargs[$argidx] = '-version'
+##        } else {
+##            $myargs[$argidx] = $args[$argidx]
+##        }
+##    }
+##    write-warning "New args $myargs"
+##    Main $myargs
+##}
+
 # vi: set ts=4 sts=4 sw=4 et ai:
