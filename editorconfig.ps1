@@ -16,49 +16,6 @@ param (
 
 $VIM = "C:\Program Files (x86)\Vim\vim74\vim.exe"   # TODO don't hardcode
 
-# Run a process with the given arguments.  TODO accept arguments.
-function run_process()
-{
-    param(
-        [Parameter(Mandatory=$true, Position=0)][string]$run,
-        [string[]]$argv,
-        [string]$extrapath,
-        [string]$stdout,        # Redirect stdout to this file
-        [string]$stderr         # Redirect stderr to this file
-    )
-
-    $si = new-object Diagnostics.ProcessStartInfo
-    if($extrapath) {
-        $si.EnvironmentVariables['path']+=";${extrapath}"
-    }
-    $si.FileName=$run
-    $si.Arguments=$argv;
-    $si.UseShellExecute=$false
-    # DEBUG  $si.RedirectStandardInput=$true
-    $si.RedirectStandardOutput=!!$stdout;
-    $si.RedirectStandardError=!!$stderr;
-
-    $p = [Diagnostics.Process]::Start($si)
-    # DEBUG $p.StandardInput.Close()        # < /dev/null
-
-    $p.WaitForExit()
-    $retval = $p.ExitCode
-
-    if($stdout) {
-        $p.StandardOutput.ReadToEnd() | `
-            Out-File -FilePath $stdout -Encoding utf8 -Append
-    }
-
-    if($stderr) {
-        $p.StandardError.ReadToEnd() | `
-            Out-File -FilePath $stderr -Encoding utf8 -Append
-    }
-
-    $p.Close()
-
-    return $retval
-}
-
 # Get the directory of this script.  From
 # https://stackoverflow.com/a/5466355/2877364 by
 # https://stackoverflow.com/users/23283/jaredpar
@@ -73,12 +30,85 @@ if($debug -and ($debug -notmatch '^/')) {
     $debug="${DIR}/${debug}"
 }
 
+### Helpers ============================================================
+
 # Append a string to $debug in UTF-8 rather than the default UTF-16
-filter D {
+filter D($file = $debug) {
     if($debug) {
-        echo $_ | Out-File -FilePath $debug -Encoding utf8 -Append
+        echo $_ | Out-File -FilePath $file -Encoding utf8 -Append
     }
 }
+
+# Escape a string for Vim
+function vesc($str) {
+    return "'" + ($str -replace "'","''") + "'"
+}
+
+# Escape a string for a command-line argument.
+# See https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.arguments?view=netframework-4.7.2
+function argesc($arg) {
+    return '"' + ($arg -replace '"','"""') + '"'
+}
+
+### Runner =============================================================
+
+# Run a process with the given arguments.  TODO accept arguments.
+function run_process
+{
+    param(
+        [Parameter(Mandatory=$true, Position=0)][string]$run,
+        [string]$extrapath,
+        [string]$stdout,        # Redirect stdout to this file
+        [string]$stderr,        # Redirect stderr to this file
+        [string[]]$argv         # Arguments to $run
+    )
+    $si = new-object Diagnostics.ProcessStartInfo
+    if($extrapath) {
+        $si.EnvironmentVariables['path']+=";${extrapath}"
+    }
+    $si.FileName=$run
+
+    # Stringify the arguments (blech)
+    $argstr = $argv | % { (argesc $_) + ' ' }
+    $si.Arguments = $argstr;
+
+    if($debug) { write-warning "Running process $run with arguments >>$argstr<<" }
+
+    $si.UseShellExecute=$false
+    # DEBUG  $si.RedirectStandardInput=$true
+    if($stdout) {
+        if($debug) { write-warning "Saving stdout to ${stdout}" }
+        $si.RedirectStandardOutput=$true;
+    }
+    if($stderr) {
+        if($debug) { write-warning "Saving stderr to ${stderr}" }
+        $si.RedirectStandardError=$true;
+    }
+
+    $p = [Diagnostics.Process]::Start($si)
+    # DEBUG $p.StandardInput.Close()        # < /dev/null
+
+    $p.WaitForExit()
+    $retval = $p.ExitCode
+
+    if($stdout) {
+        echo "Standard output:" | D $stdout
+        $p.StandardOutput.ReadToEnd() | `
+            Out-File -FilePath $stdout -Encoding utf8 -Append
+    }
+
+    if($stderr) {
+        echo "Standard error:" | D $stderr
+        $p.StandardError.ReadToEnd() | `
+            Out-File -FilePath $stderr -Encoding utf8 -Append
+    }
+
+    $p.Close()
+
+    return $retval
+}
+
+### Main ===============================================================
 
 if($debug) {
     echo "==================================" | D
@@ -103,11 +133,6 @@ if($files.count -lt 1) {
 if($files[0] -eq '-') {
     echo "Reading filenames from stdin not yet supported" # TODO
     exit 1
-}
-
-# Escape a string for Vim
-function vesc($str) {
-    return "'" + ($str -replace "'","''") + "'"
 }
 
 $fn=[System.IO.Path]::GetTempFileName();    # Vim will write the settings into here.  ~stdout.
@@ -142,13 +167,14 @@ if($set_version) { $cmd += "'version':" + (vesc($set_version)) + ", " }
     # version number we should behave as
 $cmd += "})"
 
-$cmd =':q!'  # DEBUG
-echo $cmd
+#$cmd =':q!'  # DEBUG
+if($debug) { write-warning "Running Vim command ${cmd}" }
 $vim_args = @(
-    '-c', "set runtimepath += $DIR",
-    #'-c', 'echom &rtp',    # doesn't show up in the output
-    #'-c', 'echo "yay"',    # ditto
-    '-c', $cmd
+    '-c', "set rtp+=$DIR",
+    '-c', 'echom &rtp',     #DEBUG
+    '-c', 'echo "yay"',     #DEBUG
+    '-c', $cmd,
+    '-c', 'quit!'   # TODO write a wrapper that will cquit on exception
 )
 
 # Run editorconfig.  Thanks for options to
@@ -158,15 +184,17 @@ $vim_args = @(
 # since it messes up ctest's interpretation
 # of the results.
 
-$basic_args='-nNes','-i','NONE','-u','NONE','-U','NONE'
+$basic_args = '-nNes','-i','NONE','-u','NONE','-U','NONE'   #, '-V1'
 
-echo "Running ${VIM}"
-$vimstatus = run_process $VIM -argv ($basic_args+$vim_args) `
-    -stdout $debug -stderr $debug
-echo "Done running"
+#echo 'DEBUG message here yay' >> $script_output_fn   #DEBUG
+
+if($debug) { write-warning "Running ${VIM}" }
+$vimstatus = run_process $VIM -stdout $debug -stderr $debug `
+    -argv ($basic_args+$vim_args)
+if($debug) { write-warning "Done running" }
 
 if($vimstatus -eq 0) {
-    cat $debug
+    cat $fn
 }
 
 # Debug output cannot be included on stdout or stderr, because
@@ -174,7 +202,7 @@ if($vimstatus -eq 0) {
 # separate debugging file.
 
 if($debug) {
-    echo "Current directory" | D
+    echo "Current directory:" | D
     (get-item -path '.').FullName | D
     echo "Script directory: $DIR" | D
 ###     echo Vim args: "${vim_args[@]}" >> "$debug"
@@ -184,12 +212,20 @@ if($debug) {
     cat $script_output_fn | D
     echo "Output was:" | D
 
-    # Thanks to https://www.itprotoday.com/powershell/get-hex-dumps-files-powershell
-    Get-Content "C:\Windows\notepad.exe" -Encoding Byte ` -ReadCount 16 | ForEach-Object {
+    # Modified from https://www.itprotoday.com/powershell/get-hex-dumps-files-powershell
+    Get-Content $script_output_fn -Encoding Byte -ReadCount 16 | `
+    ForEach-Object {
         $output = ""
+        $chars = ''
         foreach ( $byte in $_ ) {
             $output += "{0:X2} " -f $byte
+            if( ($byte -ge 32) -and ($byte -le 127) ) {
+                $chars += [char]$byte
+            } else {
+                $chars += '.'
+            }
         }
+        $output + ' ' + $chars
     } | D
 
     del -Force $script_output_fn
@@ -197,5 +233,5 @@ if($debug) {
 
 del -Force $fn
 
-### exit "$vimstatus"
+exit $vimstatus
 # vi: set ts=4 sts=4 sw=4 et ai:
