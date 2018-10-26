@@ -14,9 +14,17 @@ param (
         # https://docs.microsoft.com/en-us/previous-versions/technet-magazine/jj554301(v=msdn.10)
 )
 
-. .\ecvimlib.ps1
+. "$PSScriptRoot\ecvimlib.ps1"
 
 ### Main ===============================================================
+
+# Preprocess args to support --version (with two hyphens)
+
+if(($files.count -gt 0) -and ($files[0] -eq '--version')) {
+    $null, $files = $files      # shift $files
+    # https://blogs.msdn.microsoft.com/powershell/2007/02/05/powershell-tip-how-to-shift-arrays/
+    $report_version = $true
+}
 
 if($debug) {
     echo "==================================" | D
@@ -30,18 +38,6 @@ if($debug) {
     echo "Filenames:       $files"              | D
     echo "Args:            $args"               | D
 }
-
-# NOTE: function Main is an experiment that didn't work.  I wanted to turn
-# -version into --version.  However, splatting only fills positional parameters,
-# not named switches.  I may be able to do it by splatting hashes or by checking
-# the positional parameters.  See
-# https://stackoverflow.com/q/38009106/2877364 by
-# https://stackoverflow.com/users/3719459/paebbels and
-# https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_splatting?view=powershell-6#splatting-command-parameters.
-
-### The main function.  Put here so we can turn -version into --version.
-##function Main
-##{
 
 if($report_version) {
     echo "EditorConfig VimScript Core Version 0.12.2"
@@ -93,8 +89,8 @@ $cmd += "})"
 if($debug) { write-warning "Running Vim command ${cmd}" }
 $vim_args = @(
     '-c', "set rtp+=$DIR",
-    '-c', 'echom &rtp',     #DEBUG
-    '-c', 'echo "yay"',     #DEBUG
+    #'-c', 'echom &rtp',     #DEBUG
+    #'-c', 'echo "yay"',     #DEBUG
     '-c', $cmd,
     '-c', 'quit!'   # TODO write a wrapper that will cquit on exception
 )
@@ -151,30 +147,10 @@ if($debug) {
     } | D
 
     del -Force $script_output_fn
-}
+} #endif $debug
 
 del -Force $fn
 
 exit $vimstatus
-
-##} #Main()
-##
-##if($args.length -eq 0) {
-##    Main
-##
-##} else {    # Convert --version to -version
-##    $myargs = 1..($args.length)
-##    for($argidx=0; $argidx -lt $args.length; ++$argidx) {
-##        write-warning "Checking $($args[$argidx])"
-##        if($args[$argidx] -eq '--version') {
-##            write-warning "Updating"
-##            $myargs[$argidx] = '-version'
-##        } else {
-##            $myargs[$argidx] = $args[$argidx]
-##        }
-##    }
-##    write-warning "New args $myargs"
-##    Main $myargs
-##}
 
 # vi: set ts=4 sts=4 sw=4 et ai:
