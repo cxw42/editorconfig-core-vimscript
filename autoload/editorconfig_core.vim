@@ -62,6 +62,17 @@ function! editorconfig_core#currbuf_cli(names, job) " out_name, in_name, ...
 
     for l:target in l:targets
 
+        " Pre-process quoting weirdness so we are more flexible in the face
+        " of CMake+CTest+BAT+Powershell quoting.
+
+        " Permit wrapping in double-quotes
+        let l:target = substitute(l:target, '\v^"(.*)"$', '\1', '')
+
+        " Permit empty ('') entries in l:targets
+        if strlen(l:target)<1
+            continue
+        endif
+
         if has_key(a:names, 'dump')
             echom 'Trying: ' . string(l:target)
         endif
