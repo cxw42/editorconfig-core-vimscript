@@ -81,9 +81,6 @@ if(($files.count -gt 0) -and ($files[0] -eq '--version')) {
 }
 
 if($debug) {
-    echo "==================================" | D
-    Get-Date -format F | D
-
     echo "Running in       $DIR"                | D
     echo "Vim executable:  $VIM"                | D
     echo "report version?  $report_version"     | D

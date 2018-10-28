@@ -11,6 +11,8 @@
 
 $global:DIR = $PSScriptRoot
 
+### Set up debugging output ============================================
+
 $global:debug=$env:EDITORCONFIG_DEBUG  # Debug filename
 
 if($global:debug -and ($global:debug -notmatch '^/')) {
@@ -126,6 +128,11 @@ function global:run_process
     $p.Close()
 
     return $retval
+}
+
+if($debug) {
+    echo "======================================================" | D
+    Get-Date -format F | D
 }
 
 $global:VIM = Find-Vim

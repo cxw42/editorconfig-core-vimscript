@@ -3,6 +3,11 @@
 ' https://stackoverflow.com/a/2470557/2877364 by
 ' https://stackoverflow.com/users/2441/aphoria
 
+' Remove CR and LF in a string
+function nocrlf(strin)
+    nocrlf = Replace(Replace(strin, vbCr, ""), vbLf, "")
+end function
+
 ' === Base64 ================================================================
 ' from https://stackoverflow.com/a/40118072/2877364 by
 ' https://stackoverflow.com/users/45375/mklement0
@@ -25,7 +30,7 @@ Function Base64Encode(ByVal sText, ByVal fAsUtf16LE)
         else
             .NodeTypedValue = StrToBytes(sText, "utf-8", 3)
         end if
-        Base64Encode = .Text
+        Base64Encode = nocrlf(.Text)    ' No line breaks; MSXML adds them.
     End With
 
 End Function
@@ -147,14 +152,15 @@ dim b64args(100)    ' 100 = arbitrary max
 
 idx=0
 For Each arg In args
-    b64args(idx) = Base64Encode(trim(arg), False)
+    b64args(idx) = Base64Encode(nocrlf(arg), False)
     ' Y64 flavor of Base64
     b64args(idx) = replace( _
         replace( _
             replace(b64args(idx), "+", "."), _
             "/", "_" ), _
         "=", "-")
-    'Wscript.Echo cstr(idx) & ": " & arg & " = " & b64args(idx)
+    'Wscript.Echo cstr(idx) & ": >" & arg & "< = >" & b64args(idx) & "<"
+    'Wscript.Echo b64args(idx)
     idx = idx+1
 Next
 
@@ -168,11 +174,13 @@ ps1name = """" & _
     replace(currentScriptPath & "editorconfig2.ps1", """", """""") & """"
 'Wscript.Echo "Script is in " & ps1name
 
-retval = RunCommandAndEcho( "powershell.exe" & _
-    " -executionpolicy bypass -file " & ps1name & " " & join(b64args) _
-)
-    ' add -noexit to leave window open so you can see error messages
+if True then
+    retval = RunCommandAndEcho( "powershell.exe" & _
+        " -executionpolicy bypass -file " & ps1name & " " & join(b64args) _
+    )
+        ' add -noexit to leave window open so you can see error messages
 
-WScript.Quit retval
+    WScript.Quit retval
+end if
 
 ' vi: set ts=4 sts=4 sw=4 et ai:
