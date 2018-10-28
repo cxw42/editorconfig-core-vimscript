@@ -19,6 +19,15 @@ if($global:debug -and ($global:debug -notmatch '^/')) {
     $global:debug="${DIR}/${global:debug}"
 }
 
+### Process args =======================================================
+
+function de64_args($argv) {
+    $argv | % {
+        $b64 = $_ -replace '-','=' -replace '_','/' -replace '\.','+'
+        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64))
+    }
+}
+
 ### Helpers ============================================================
 
 # Append a string to $debug in UTF-8 rather than the default UTF-16

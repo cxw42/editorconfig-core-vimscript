@@ -108,11 +108,11 @@ end function
 
 Set args = Wscript.Arguments
 
-dim b64args(100)
-'redim b64args(ubound(args)+1)
+dim b64args(100)    ' 100 = arbitrary max
 
 ' Make Y64-flavored base64 versions of each arg so we don't have to
 ' worry about quoting issues while executing PowerShell.
+
 idx=0
 For Each arg In args
     b64args(idx) = Base64Encode(arg, False)
@@ -126,8 +126,16 @@ For Each arg In args
     idx = idx+1
 Next
 
-Dim objShell
 Set objShell = CreateObject("Shell.Application")
 
-objShell.ShellExecute "editorconfig1.ps1", join(b64args)
+' Thanks to https://www.geekshangout.com/vbs-script-to-get-the-location-of-the-current-script/
+currentScriptPath = Replace(WScript.ScriptFullName, WScript.ScriptName, "")
 
+' Quote script name just in case
+ps1name = """" & _
+    replace(currentScriptPath & "editorconfig2.ps1", """", """""") & """"
+Wscript.Echo "Script is in " & ps1name
+
+objShell.ShellExecute "powershell.exe", _
+    "-noexit -executionpolicy bypass -file " & ps1name & " " & join(b64args)
+    ' -noexit = leave window open so you can see error messages

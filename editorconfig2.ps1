@@ -5,16 +5,21 @@
 
 #Requires -Version 3
 
-param (
-    [alias("v", "version")][switch]$report_version = $false,  # report version
-    [alias("b")][string]$set_version = '',  # set version
-    [alias("f")][string]$config_name = '.editorconfig', # config filename
-    [parameter(Position=0,ValueFromRemainingArguments=$true)][string[]]$files
-        # Position=0 => start at the first positional argument - see
-        # https://docs.microsoft.com/en-us/previous-versions/technet-magazine/jj554301(v=msdn.10)
-)
+#param (
+#    [alias("v", "version")][switch]$report_version = $false,  # report version
+#    [alias("b")][string]$set_version = '',  # set version
+#    [alias("f")][string]$config_name = '.editorconfig', # config filename
+#    [parameter(Position=0,ValueFromRemainingArguments=$true)][string[]]$files
+#        # Position=0 => start at the first positional argument - see
+#        # https://docs.microsoft.com/en-us/previous-versions/technet-magazine/jj554301(v=msdn.10)
+#)
 
 . "$PSScriptRoot\ecvimlib.ps1"
+
+### Argument processing ================================================
+
+$argv = @(de64_args($args))
+echo "ps1 got args $argv"
 
 ### Main ===============================================================
 
