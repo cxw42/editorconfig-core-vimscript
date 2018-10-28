@@ -19,7 +19,56 @@
 ### Argument processing ================================================
 
 $argv = @(de64_args($args))
-echo "ps1 got args $argv"
+#$idx=0
+#foreach ($arg in $argv) {
+#    echo "ps1 arg $idx = >>$arg<<"
+#    ++$idx
+#}
+
+# Defaults
+$report_version = $false
+$set_version = ''
+$config_name = '.editorconfig'
+$files=@()
+
+# Hand-parse - pretend we're sort of like getopt.
+$idx = 0
+while($idx -lt $argv.count) {
+    $a = $argv[$idx]
+
+    switch -CaseSensitive -Regex ($a) {
+        '^(-v|--version)$' { $report_version = $true }
+
+        '^-f$' {
+            if($idx -eq ($argv.count-1)) {
+                throw '-f <filename>: no filename provided'
+            } else {
+                ++$idx
+                $config_name = $argv[$idx]
+            }
+        } #-f
+
+        '^-b$' {
+            if($idx -eq ($argv.count-1)) {
+                throw '-b <version>: no version provided'
+            } else {
+                ++$idx
+                $set_version = $argv[$idx]
+            }
+        } #-b
+
+        '^--$' {    # End of options, so capture the rest as filenames
+            ++$idx;
+            while($idx -lt $argv.count) {
+                $files += $argv[$idx]
+            }
+        }
+
+        default { $files += $a }
+    }
+
+    ++$idx
+} # end foreach argument
 
 ### Main ===============================================================
 
@@ -42,6 +91,7 @@ if($debug) {
     echo "config filename: $config_name"        | D
     echo "Filenames:       $files"              | D
     echo "Args:            $args"               | D
+    echo "Decoded args:    $argv"               | D
 }
 
 if($report_version) {
@@ -91,7 +141,7 @@ if($set_version) { $cmd += "'version':" + (vesc($set_version)) + ", " }
 $cmd += "})"
 
 #$cmd =':q!'  # DEBUG
-if($debug) { write-warning "Running Vim command ${cmd}" }
+if($debug) { echo "Running Vim command ${cmd}" | D }
 $vim_args = @(
     '-c', "set rtp+=$DIR",
     #'-c', 'echom &rtp',     #DEBUG
@@ -111,10 +161,10 @@ $basic_args = '-nNes','-i','NONE','-u','NONE','-U','NONE'   #, '-V1'
 
 #echo 'DEBUG message here yay' >> $script_output_fn   #DEBUG
 
-if($debug) { write-warning "Running ${VIM}" }
+if($debug) { echo "Running vim ${VIM}" | D }
 $vimstatus = run_process $VIM -stdout $debug -stderr $debug `
     -argv ($basic_args+$vim_args)
-if($debug) { write-warning "Done running" }
+if($debug) { echo "Done running vim" | D }
 
 if($vimstatus -eq 0) {
     cat $fn

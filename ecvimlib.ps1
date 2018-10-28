@@ -53,7 +53,7 @@ function global:argesc($arg) {
 function global:Find-Vim
 {
     if($env:VIM_EXE) {
-        if($debug) { write-warning "Using env Vim $($env:VIM_EXE)" }
+        if($debug) { echo "Using env Vim $($env:VIM_EXE)" | D }
         return $env:VIM_EXE
     }
 
@@ -63,7 +63,7 @@ function global:Find-Vim
     # write-host ($vims | format-table | out-string)    # DEBUG
     # write-host ($vims | get-member | out-string)
     if($vims.count -gt 0) {
-        if($debug) { write-warning "Using found Vim $($vims[0].FullName)" }
+        if($debug) { echo "Using found Vim $($vims[0].FullName)" | D }
         return $vims[0].FullName
     }
 
@@ -92,16 +92,16 @@ function global:run_process
     $argstr = $argv | % { (argesc $_) + ' ' }
     $si.Arguments = $argstr;
 
-    if($debug) { write-warning "Running process $run with arguments >>$argstr<<" }
+    if($debug) { echo "Running process $run with arguments >>$argstr<<" | D }
 
     $si.UseShellExecute=$false
     # DEBUG  $si.RedirectStandardInput=$true
     if($stdout) {
-        if($debug) { write-warning "Saving stdout to ${stdout}" }
+        if($debug) { echo "Saving stdout to ${stdout}" | D }
         $si.RedirectStandardOutput=$true;
     }
     if($stderr) {
-        if($debug) { write-warning "Saving stderr to ${stderr}" }
+        if($debug) { echo "Saving stderr to ${stderr}" | D }
         $si.RedirectStandardError=$true;
     }
 

@@ -104,6 +104,38 @@ function BytesToStr(ByVal byteArray, ByVal sTextEncoding)
 
 end function
 
+' === Runner ================================================================
+
+' Run a command, copy its stdout/stderr to ours, and return its exit
+' status.
+' Modified from https://stackoverflow.com/a/32493083/2877364 by
+' https://stackoverflow.com/users/3191599/nate-barbettini .
+' See also https://www.vbsedit.com/html/4c5b06ac-dc45-4ec2-aca1-f168bab75483.asp
+function RunCommandAndEcho(strCommand)
+    Const WshRunning = 0
+    Const WshFinished = 1
+    Const WshFailed = 2
+
+    Set WshShell = CreateObject("WScript.Shell")
+    'WScript.Echo "Running >>" & strCommand & "<<..."
+    Set WshShellExec = WshShell.Exec(strCommand)
+
+    Do While WshShellExec.Status = WshRunning
+        'WScript.Echo "Waiting..."
+        WScript.Sleep 100
+    Loop
+
+    if not WshShellExec.StdOut.AtEndOfStream then
+        WScript.StdOut.Write(WshShellExec.StdOut.ReadAll())
+    end if
+
+    if not WshShellExec.StdErr.AtEndOfStream then
+        WScript.StdErr.Write(WshShellExec.StdErr.ReadAll())
+    end if
+
+    RunCommandAndEcho = WshShellExec.ExitCode
+end function
+
 ' === MAIN ==================================================================
 
 Set args = Wscript.Arguments
@@ -115,14 +147,14 @@ dim b64args(100)    ' 100 = arbitrary max
 
 idx=0
 For Each arg In args
-    b64args(idx) = Base64Encode(arg, False)
+    b64args(idx) = Base64Encode(trim(arg), False)
     ' Y64 flavor of Base64
     b64args(idx) = replace( _
         replace( _
             replace(b64args(idx), "+", "."), _
             "/", "_" ), _
         "=", "-")
-    Wscript.Echo cstr(idx) & ": " & arg & " = " & b64args(idx)
+    'Wscript.Echo cstr(idx) & ": " & arg & " = " & b64args(idx)
     idx = idx+1
 Next
 
@@ -134,8 +166,13 @@ currentScriptPath = Replace(WScript.ScriptFullName, WScript.ScriptName, "")
 ' Quote script name just in case
 ps1name = """" & _
     replace(currentScriptPath & "editorconfig2.ps1", """", """""") & """"
-Wscript.Echo "Script is in " & ps1name
+'Wscript.Echo "Script is in " & ps1name
 
-objShell.ShellExecute "powershell.exe", _
-    "-noexit -executionpolicy bypass -file " & ps1name & " " & join(b64args)
-    ' -noexit = leave window open so you can see error messages
+retval = RunCommandAndEcho( "powershell.exe" & _
+    " -executionpolicy bypass -file " & ps1name & " " & join(b64args) _
+)
+    ' add -noexit to leave window open so you can see error messages
+
+WScript.Quit retval
+
+' vi: set ts=4 sts=4 sw=4 et ai:
