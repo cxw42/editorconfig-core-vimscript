@@ -11,12 +11,23 @@
 
 $global:DIR = $PSScriptRoot
 
+### Set up debugging output ============================================
+
 $global:debug=$env:EDITORCONFIG_DEBUG  # Debug filename
 
 if($global:debug -and ($global:debug -notmatch '^/')) {
     # Relative to this script unless it starts with a slash.  This is because
     # cwd is usually not $DIR when testing.
     $global:debug="${DIR}/${global:debug}"
+}
+
+### Process args =======================================================
+
+function de64_args($argv) {
+    $argv | % {
+        $b64 = $_ -replace '-','=' -replace '_','/' -replace '\.','+'
+        [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b64))
+    }
 }
 
 ### Helpers ============================================================
@@ -44,7 +55,7 @@ function global:argesc($arg) {
 function global:Find-Vim
 {
     if($env:VIM_EXE) {
-        if($debug) { write-warning "Using env Vim $($env:VIM_EXE)" }
+        if($debug) { echo "Using env Vim $($env:VIM_EXE)" | D }
         return $env:VIM_EXE
     }
 
@@ -54,7 +65,7 @@ function global:Find-Vim
     # write-host ($vims | format-table | out-string)    # DEBUG
     # write-host ($vims | get-member | out-string)
     if($vims.count -gt 0) {
-        if($debug) { write-warning "Using found Vim $($vims[0].FullName)" }
+        if($debug) { echo "Using found Vim $($vims[0].FullName)" | D }
         return $vims[0].FullName
     }
 
@@ -83,16 +94,16 @@ function global:run_process
     $argstr = $argv | % { (argesc $_) + ' ' }
     $si.Arguments = $argstr;
 
-    if($debug) { write-warning "Running process $run with arguments >>$argstr<<" }
+    if($debug) { echo "Running process $run with arguments >>$argstr<<" | D }
 
     $si.UseShellExecute=$false
     # DEBUG  $si.RedirectStandardInput=$true
     if($stdout) {
-        if($debug) { write-warning "Saving stdout to ${stdout}" }
+        if($debug) { echo "Saving stdout to ${stdout}" | D }
         $si.RedirectStandardOutput=$true;
     }
     if($stderr) {
-        if($debug) { write-warning "Saving stderr to ${stderr}" }
+        if($debug) { echo "Saving stderr to ${stderr}" | D }
         $si.RedirectStandardError=$true;
     }
 
@@ -117,6 +128,11 @@ function global:run_process
     $p.Close()
 
     return $retval
+}
+
+if($debug) {
+    echo "======================================================" | D
+    Get-Date -format F | D
 }
 
 $global:VIM = Find-Vim
