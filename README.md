@@ -1,11 +1,12 @@
-# EditorConfig VimScript Core
+# EditorConfig VimScript Core v0.1
 
-EditorConfig VimScript Core provides the same functionality as the
+The EditorConfig VimScript Core provides the same functionality as the
 [EditorConfig C Core](https://github.com/editorconfig/editorconfig-core>).
 
 # Usage
 
-**Note:** This is not ready for use yet!  It will be soon!
+**Note:** This is just a core --- it does not integrate with your Vim
+workflow yet.  That is coming soon!
 
  - From the command line: `./editorconfig [opts] <filename>`
  - From Vim: clone or unzip into `~/.vim/bundle/editorconfig-core-vimscript`

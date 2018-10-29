@@ -51,7 +51,7 @@ vim_args=()
 
 if [[ $globpat ]]; then
     vim_args+=(
-        -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}','${globpat//\'/\'\'}') | exit | else | cquit | endif"
+        -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}','${globpat//\'/\'\'}') | quit! | else | cquit | endif"
         -c 'q!'
     )
     echo "Matching -${globpat}- against -${1}-" 1>&2

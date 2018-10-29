@@ -1,5 +1,5 @@
-' editorconfig1.vbs: run by editorconfig.bat
-' runs editorconfig2.ps1
+' ecunit1.vbs: run by ecunit.bat
+' runs ecunit2.ps1
 ' CC-BY-SA 3.0+
 ' Modified from
 ' https://stackoverflow.com/a/2470557/2877364 by
@@ -17,8 +17,7 @@ End With
 
 b64args = MakeY64Args(Wscript.Arguments)
 
-' Quote script name just in case
-ps1name = QuoteForShell(currentScriptPath & "editorconfig2.ps1")
+ps1name = QuoteForShell(currentScriptPath & "ecunit2.ps1")
 'Wscript.Echo "Script is in " & ps1name
 
 if True then

@@ -1,4 +1,4 @@
-# editorconfig.ps1: Editorconfig Vimscript core CLI, PowerShell version
+# editorconfig2.ps1: Editorconfig Vimscript core CLI, PowerShell version
 # Copyright (c) 2018 Chris White.  CC-BY-SA 3.0.
 # Thanks to https://cecs.wright.edu/~pmateti/Courses/233/Labs/Scripting/bashVsPowerShellTable.html
 # by Gallagher and Mateti.
@@ -72,14 +72,6 @@ while($idx -lt $argv.count) {
 
 ### Main ===============================================================
 
-# Preprocess args to support --version (with two hyphens)
-
-if(($files.count -gt 0) -and ($files[0] -eq '--version')) {
-    $null, $files = $files      # shift $files
-    # https://blogs.msdn.microsoft.com/powershell/2007/02/05/powershell-tip-how-to-shift-arrays/
-    $report_version = $true
-}
-
 if($debug) {
     echo "Running in       $DIR"                | D
     echo "Vim executable:  $VIM"                | D
@@ -111,7 +103,13 @@ if($debug) {
     $script_output_fn = [System.IO.Path]::GetTempFileName()
 }
 
-$cmd="call editorconfig_core#currbuf_cli({"
+# Permit throwing in setup commands
+$cmd = ''
+if($env:EDITORCONFIG_EXTRA) {
+    $cmd += $env:EDITORCONFIG_EXTRA + ' | '
+}
+
+$cmd += 'call editorconfig_core#currbuf_cli({'
 
 # Names
 $cmd += "'output':" + (vesc($fn)) + ", "

@@ -15,6 +15,7 @@ if((NOT WIN32) OR CYGWIN)
     set(EDITORCONFIG_UNIT_TEST_CMD "${CMAKE_SOURCE_DIR}/ecunit")
 else()
     set(EDITORCONFIG_CMD "${CMAKE_SOURCE_DIR}/editorconfig.bat")
+    set(EDITORCONFIG_UNIT_TEST_CMD "${CMAKE_SOURCE_DIR}/ecunit.bat")
 endif()
 
 add_subdirectory(unittests)
