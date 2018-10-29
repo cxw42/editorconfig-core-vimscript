@@ -20,6 +20,9 @@
 "Changes to original fnmatch module:
 "- translate function supports ``*`` and ``**`` similarly to fnmatch C library
 
+let s:saved_cpo = &cpo
+set cpo&vim
+
 " === Regexes =========================================================== {{{1
 let s:LEFT_BRACE = '\v%(^|[^\\])\{'
 "LEFT_BRACE = re.compile(
@@ -283,7 +286,8 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
 "
     " Note: This throws away the backslash in '\.txt' on Cygwin, but that
     " makes sense since it's Windows under the hood.
-    " TODO set shellescape or shellslash?
+    " We don't care about shellslash since we're going to change backslashes
+    " to slashes in just a moment anyway.
     let l:localname = fnamemodify(a:name, ':p')
 
     if editorconfig_core#util#is_win()      " normalize
@@ -333,5 +337,8 @@ function! editorconfig_core#fnmatch#fnmatchcase(name, pat)
 endfunction
 
 " }}}1
+
+let &cpo = s:saved_cpo
+unlet! s:saved_cpo
 
 " vi: set fdm=marker:

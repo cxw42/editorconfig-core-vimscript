@@ -2,7 +2,10 @@
 " editorconfig-core-vimscript.
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
-" Return full filepath for filename in each directory in and above path.
+let s:saved_cpo = &cpo
+set cpo&vim
+
+" Return full filepath for filename in each directory in and above path. {{{1
 " Input path must be an absolute path.
 " TODO shellslash/shellescape?
 function! s:get_filenames(path, config_filename)
@@ -17,7 +20,7 @@ function! s:get_filenames(path, config_filename)
         let l:path = l:newpath
     endwhile
     return l:path_list
-endfunction
+endfunction " }}}1
 
 " === Main ============================================================== {{{1
 
@@ -56,19 +59,17 @@ function! editorconfig_core#handler#get_configurations(job)
 
     let l:fullpath = fnamemodify(l:target_filename,':p')
     let l:path = fnamemodify(l:fullpath, ':h')
-    let l:filename = fnamemodify(l:fullpath, ':t')
     let l:conf_files = s:get_filenames(l:path, l:config_filename)
 
     " echom 'fullpath ' . l:fullpath
     " echom 'path ' . l:path
-    " echom 'filename ' . l:filename
 
     let l:retval = {}
 
     " Attempt to find and parse every EditorConfig file in filetree
-    for l:filename in l:conf_files
-        "echom 'Trying ' . l:filename
-        let l:parsed = editorconfig_core#ini#read_ini_file(l:filename, l:target_filename)
+    for l:conf_fn in l:conf_files
+        "echom 'Trying ' . l:conf_fn
+        let l:parsed = editorconfig_core#ini#read_ini_file(l:conf_fn, l:target_filename)
         if !has_key(l:parsed, 'options')
             continue
         endif
@@ -114,14 +115,14 @@ endfunction
 
 " }}}1
 
-" Preprocess option values for consumption by plugins.  Modifies its argument
-" in place.
+" Preprocess option values for consumption by plugins.  {{{1
+" Modifies its argument in place.
 function! s:preprocess_values(job, opts)
 
     " Lowercase option value for certain options
     for l:name in ['end_of_line', 'indent_style', 'indent_size',
-                \'insert_final_newline', 'trim_trailing_whitespace',
-                \'charset']
+                \ 'insert_final_newline', 'trim_trailing_whitespace',
+                \ 'charset']
         if has_key(a:opts, l:name)
             let a:opts[l:name] = tolower(a:opts[l:name])
         endif
@@ -147,8 +148,7 @@ function! s:preprocess_values(job, opts)
                 \ get(a:opts, 'indent_size', '') ==? "tab"
         let a:opts['indent_size'] = a:opts['tab_width']
     endif
-endfunction
-
+endfunction " }}}1
 
 " === Copyright notices ================================================= {{{2
 """"EditorConfig file handler
@@ -160,4 +160,8 @@ endfunction
 
 """"
 " }}}2
+
+let &cpo = s:saved_cpo
+unlet! s:saved_cpo
+
 " vi: set fdm=marker fdl=1:

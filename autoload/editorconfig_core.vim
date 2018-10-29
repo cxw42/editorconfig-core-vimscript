@@ -2,6 +2,9 @@
 " editorconfig-core-vimscript.
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
+let s:saved_cpo = &cpo
+set cpo&vim
+
 " The version we are, i.e., the latest version we support
 function! editorconfig_core#version()
     return [0,12,2]
@@ -114,5 +117,8 @@ function! editorconfig_core#clear_caches()
 endfunction "editorconfig_core#currbuf_cli
 
 " }}}1
+
+let &cpo = s:saved_cpo
+unlet! s:saved_cpo
 
 " vi: set fdm=marker:

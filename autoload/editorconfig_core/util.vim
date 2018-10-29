@@ -1,18 +1,29 @@
 " util.vim: part of editorconfig-core-vimscript
 
-" ('a','b')->'a/b'; ('a/','b')->'a/b'.
+let s:saved_cpo = &cpo
+set cpo&vim
+
+" A verbatim copy of ingo#fs#path#Separator()  {{{1
+" from https://github.com/vim-scripts/ingo-library/blob/558132e2221db3af26dc2f2c6756d092d48a459f/autoload/ingo/fs/path.vim
+" distributed under the Vim license.
+function! editorconfig_core#util#Separator()
+    return (exists('+shellslash') && ! &shellslash ? '\' : '/')
+endfunction " }}}1
+
+" path_join(): ('a','b')->'a/b'; ('a/','b')->'a/b'. {{{1
 function! editorconfig_core#util#path_join(a, b)
     " TODO shellescape/shellslash?
     "echom 'Joining <' . a:a . '> and <' . a:b . '>'
     "echom 'Length is ' . strlen(a:a)
     "echom 'Last char is ' . char2nr(a:a[-1])
     if a:a !~# '\v%(\/|\\)$'
-        return a:a . '/' . a:b
+        return a:a . editorconfig_core#util#Separator() . a:b
     else
         return a:a . a:b
     endif
-endfunction
+endfunction " }}}1
 
+" is_win() by xolox {{{1
 " The following function is modified from
 " https://github.com/xolox/vim-misc/blob/master/autoload/xolox/misc/os.vim
 " Copyright (c) 2015 Peter Odding <peter@peterodding.com>
@@ -37,8 +48,14 @@ endfunction
 function! editorconfig_core#util#is_win()
     " Returns 1 (true) when on Microsoft Windows, 0 (false) otherwise.
     return has('win16') || has('win32') || has('win64')
-endfunction
+endfunction " }}}1
 
+" strip() {{{1
 function! editorconfig_core#util#strip(s)
     return substitute(a:s, '\v^\s+|\s+$','','g')
-endfunction
+endfunction " }}}1
+
+let &cpo = s:saved_cpo
+unlet! s:saved_cpo
+
+" vi: set fdm=marker:

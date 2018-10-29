@@ -2,6 +2,9 @@
 " editorconfig-core-vimscript.  Modifed from the Python core's ini.py.
 " Copyright (c) 2018 Chris White.  All rights reserved.
 
+let s:saved_cpo = &cpo
+set cpo&vim
+
 " === Constants, including regexes ====================================== {{{2
 " Regular expressions for parsing section headers and options.
 " Allow ``]`` and escaped ``;`` and ``#`` characters in section headers.
@@ -38,7 +41,7 @@ function! editorconfig_core#ini#read_ini_file(config_filename, target_filename)
     catch
         let &encoding = l:oldenc
         " rethrow, but with a prefix since throw 'Vim...' fails.
-        throw '!' . string(v:exception) . ' at ' . v:throwpoint
+        throw 'Could not read editorconfig file at ' . v:throwpoint . ': ' . string(v:exception)
     endtry
 
     let &encoding = l:oldenc
@@ -156,6 +159,7 @@ endfunction!
 " }}}1
 " === Helpers =========================================================== {{{1
 
+" Preprocess option names
 function! s:optionxform(optionstr)
     let l:result = substitute(a:optionstr, '\v\s+$', '', 'g')   " rstrip
     return tolower(l:result)
@@ -165,8 +169,11 @@ endfunction
 function! s:matches_filename(config_filename, target_filename, glob)
 "    config_dirname = normpath(dirname(config_filename)).replace(sep, '/')
     let l:config_dirname = fnamemodify(a:config_filename, ':p:h') . '/'
+
     if editorconfig_core#util#is_win()
-        let l:config_dirname = tolower(substitute(l:config_dirname, '\\', '/', 'g'))
+        " Regardless of whether shellslash is set, make everything slashes
+        let l:config_dirname =
+                \ tolower(substitute(l:config_dirname, '\v\\', '/', 'g'))
     endif
     " echom 'matches_filename: config_dirname is ' . l:config_dirname
 
@@ -200,5 +207,8 @@ endfunction
 "- Stop parsing files with when ``root = true`` is found
 """"
 " }}}2
+
+let &cpo = s:saved_cpo
+unlet! s:saved_cpo
 
 " vi: set fdm=marker fdl=1:
