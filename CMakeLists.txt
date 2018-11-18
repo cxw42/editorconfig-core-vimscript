@@ -3,8 +3,7 @@
 # To perform the test, run `cmake .` at the root of the project tree followed
 # by ctest .
 
-cmake_minimum_required(VERSION 3.1)
-set(CMAKE_LEGACY_CYGWIN_WIN32 0)
+cmake_minimum_required(VERSION 3.5)
 
 # Do not check any compiler
 project(editorconfig-core-vimscript NONE)
@@ -33,7 +32,7 @@ endfunction()
 
 # This doesn't work - without the extra quotes, the filename gets split at
 # the comma.
-new_ec_test(braces_empty_word4 braces.in "tests/glob/a,.d" "^[ \t\n\r]*$")
+#new_ec_test(braces_empty_word4 braces.in "tests/glob/a,.d" "^[ \t\n\r]*$")
 
 # Test
 #add_test(quux "C:/Users/chrisw/proj-local/editorconfig-core-vimscript/pstest.bat" "-f" "braces.in" "${CMAKE_CURRENT_SOURCE_DIR}/tests/glob/a,.d")
@@ -41,6 +40,6 @@ new_ec_test(braces_empty_word4 braces.in "tests/glob/a,.d" "^[ \t\n\r]*$")
 # DEBUG ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #add_subdirectory(unittests)
-#add_subdirectory(tests)
+add_subdirectory(tests)
 
 configure_file(CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
