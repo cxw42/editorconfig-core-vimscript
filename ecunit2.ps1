@@ -1,4 +1,5 @@
 # ecunit2.ps1: Editorconfig Vimscript unit-test runner
+# Part of editorconfig-core-vimscript.
 # Copyright (c) 2018 Chris White.  CC-BY-SA 3.0.
 # Thanks to https://cecs.wright.edu/~pmateti/Courses/233/Labs/Scripting/bashVsPowerShellTable.html
 # by Gallagher and Mateti.

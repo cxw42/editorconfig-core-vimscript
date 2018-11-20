@@ -1,6 +1,6 @@
 #!/bin/bash
 # editorconfig: Editorconfig Vimscript core CLI
-# This script is CC-BY-SA 3.0.
+# Copyright (c) 2018 Chris White.  CC-BY-SA 3.0+.
 
 # Get the directory of this script.  From
 # https://stackoverflow.com/a/246128/2877364 by

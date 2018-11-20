@@ -1,3 +1,6 @@
+' ecvbslib.vbs: editorconfig-core-vimscript VBScript routines.
+' Copyright (c) 2018 Chris White.  CC-BY-SA 3.0+.
+
 ' Remove CR and LF in a string
 function nocrlf(strin)
     nocrlf = Replace(Replace(strin, vbCr, ""), vbLf, "")
@@ -30,7 +33,6 @@ Function Base64Encode(ByVal sText, ByVal fAsUtf16LE)
 
 End Function
 
-
 ' Decodes the specified Base64-encoded string.
 ' If the decoded string's original encoding was:
 ' * UTF-8, pass False for fIsUtf16LE.
@@ -50,7 +52,6 @@ Function Base64Decode(ByVal sBase64EncodedText, ByVal fIsUtf16LE)
     End With
 
 End Function
-
 
 ' Returns a binary representation (byte array) of the specified string in
 ' the specified text encoding, such as "utf-8" or "utf-16le".
@@ -166,4 +167,3 @@ Function QuoteForShell(strIn)
     QuoteForShell = """" & _
         replace(strIn, """", """""") & """"
 End Function
-

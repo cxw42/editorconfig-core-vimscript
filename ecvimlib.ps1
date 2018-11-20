@@ -136,4 +136,3 @@ if($debug) {
 }
 
 $global:VIM = Find-Vim
-

@@ -1,29 +1,15 @@
 # editorconfig2.ps1: Editorconfig Vimscript core CLI, PowerShell version
-# Copyright (c) 2018 Chris White.  CC-BY-SA 3.0.
+# Copyright (c) 2018 Chris White.  CC-BY-SA 3.0+.
 # Thanks to https://cecs.wright.edu/~pmateti/Courses/233/Labs/Scripting/bashVsPowerShellTable.html
 # by Gallagher and Mateti.
 
 #Requires -Version 3
-
-#param (
-#    [alias("v", "version")][switch]$report_version = $false,  # report version
-#    [alias("b")][string]$set_version = '',  # set version
-#    [alias("f")][string]$config_name = '.editorconfig', # config filename
-#    [parameter(Position=0,ValueFromRemainingArguments=$true)][string[]]$files
-#        # Position=0 => start at the first positional argument - see
-#        # https://docs.microsoft.com/en-us/previous-versions/technet-magazine/jj554301(v=msdn.10)
-#)
 
 . "$PSScriptRoot\ecvimlib.ps1"
 
 ### Argument processing ================================================
 
 $argv = @(de64_args($args))
-#$idx=0
-#foreach ($arg in $argv) {
-#    echo "ps1 arg $idx = >>$arg<<"
-#    ++$idx
-#}
 
 # Defaults
 $report_version = $false
@@ -97,7 +83,8 @@ if($files[0] -eq '-') {
     exit 1
 }
 
-$fn=[System.IO.Path]::GetTempFileName();    # Vim will write the settings into here.  ~stdout.
+$fn=[System.IO.Path]::GetTempFileName();
+    # Vim will write the settings into here.  Sort of like stdout.
 $script_output_fn = ''
 if($debug) {
     $script_output_fn = [System.IO.Path]::GetTempFileName()
@@ -125,7 +112,6 @@ ForEach ($item in $files) {
     $cmd += (vesc($item)) + ", "
 }
 $cmd += "],"
-    # filename to get the settings for
 
 # Job
 $cmd += "}, {"
@@ -139,8 +125,6 @@ $cmd += "})"
 if($debug) { echo "Running Vim command ${cmd}" | D }
 $vim_args = @(
     '-c', "set rtp+=$DIR",
-    #'-c', 'echom &rtp',     #DEBUG
-    #'-c', 'echo "yay"',     #DEBUG
     '-c', $cmd,
     '-c', 'quit!'   # TODO write a wrapper that will cquit on exception
 )
@@ -153,8 +137,6 @@ $vim_args = @(
 # of the results.
 
 $basic_args = '-nNes','-i','NONE','-u','NONE','-U','NONE'   #, '-V1'
-
-#echo 'DEBUG message here yay' >> $script_output_fn   #DEBUG
 
 if($debug) { echo "Running vim ${VIM}" | D }
 $vimstatus = run_process $VIM -stdout $debug -stderr $debug `

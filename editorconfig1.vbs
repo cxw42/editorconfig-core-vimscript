@@ -1,6 +1,7 @@
 ' editorconfig1.vbs: run by editorconfig.bat
 ' runs editorconfig2.ps1
-' CC-BY-SA 3.0+
+' Part of editorconfig-core-vimscript
+' Copyright (c) 2018 Chris White.  CC-BY-SA 3.0+.
 ' Modified from
 ' https://stackoverflow.com/a/2470557/2877364 by
 ' https://stackoverflow.com/users/2441/aphoria
@@ -15,6 +16,8 @@ End With
 
 ' === MAIN ==================================================================
 
+' Encode all the arguments as modified base64 so there will be no quoting
+' issues when we invoke powershell.
 b64args = MakeY64Args(Wscript.Arguments)
 
 ' Quote script name just in case
