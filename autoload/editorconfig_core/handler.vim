@@ -52,7 +52,7 @@ function! editorconfig_core#handler#get_configurations(job)
 
     let l:target_filename = l:job.target
 
-    echom 'Beginning job ' . string(l:job)
+    "echom 'Beginning job ' . string(l:job)
     if !s:check_assertions(l:job)
         throw "Assertions failed"
     endif
