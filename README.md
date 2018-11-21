@@ -1,5 +1,7 @@
 # EditorConfig VimScript Core v0.1
 
+[![Appveyor Badge](https://ci.appveyor.com/api/projects/status/github/cxw42/editorconfig-core-vimscript?svg=true)](https://ci.appveyor.com/project/cxw42/editorconfig-core-vimscript)
+
 The EditorConfig VimScript Core provides the same functionality as the
 [EditorConfig C Core](https://github.com/editorconfig/editorconfig-core>).
 
