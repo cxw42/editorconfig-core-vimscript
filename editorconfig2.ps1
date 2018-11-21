@@ -25,6 +25,10 @@ while($idx -lt $argv.count) {
     switch -CaseSensitive -Regex ($a) {
         '^(-v|--version)$' { $report_version = $true }
 
+        '^--dummy$' {
+            # A dummy option so that I can test list-valued EDITORCONFIG_CMD
+        }
+
         '^-f$' {
             if($idx -eq ($argv.count-1)) {
                 throw '-f <filename>: no filename provided'

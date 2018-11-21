@@ -49,7 +49,12 @@ while getopts 'vf:b:-:' opt ; do
         (-) case "$OPTARG" in   # hacky long-option processing
                 version)    print_ver=1
                             ;;
+                dummy)      # A dummy option so that I can test
+                            # list-valued EDITORCONFIG_CMD
+                            ;;
             esac
+            ;;
+
     esac
 done
 
