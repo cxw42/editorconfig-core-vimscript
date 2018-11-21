@@ -8,3 +8,6 @@ end_of_line = LF
 
 [*.{bat,vbs,ps1}]
 end_of_line = CRLF
+
+[*.yml]
+indent_size = 2
