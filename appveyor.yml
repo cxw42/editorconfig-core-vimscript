@@ -18,6 +18,16 @@
 #
 # @author Chris White (cxw42) - Adapted to editorconfig-core-vimscript
 
+# === When to build ===
+# See https://www.appveyor.com/docs/how-to/filtering-commits/
+
+skip_commits:
+  message: /\[minor\]/
+  files:
+    - '**/*.md'
+
+# === How to build ===
+
 environment:
   VIM_EXE: C:\vim\vim\vim80\vim.exe
 
@@ -25,8 +35,7 @@ install:
 #  - cmd: SET PATH=C:\Users\appveyor\.m2\apache-maven-3.5.0-bin\6ps54u5pnnbbpr6ds9rppcc7iv\apache-maven-3.5.0\bin;%JAVA_HOME%\bin;%PATH%
   - cmake --version
   - git submodule update --init --recursive
-  - appveyor DownloadFile https://github.com/cxw42/editorconfig-core-vimscript/releases/download/v0.1.0/vim.7z
-  - 7z x vim.7z -oC:\vim
+  - fetch-vim
 
 build_script:
   - mkdir build-win
@@ -43,5 +52,5 @@ on_failure:
   - type Testing\Temporary\LastTest.log
 
 cache:
-  - C:\vim -> appveyor.yml
+  - C:\vim -> appveyor.yml, fetch-vim.bat
 
