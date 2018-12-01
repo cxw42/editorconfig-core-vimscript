@@ -2,6 +2,13 @@
 # editorconfig: Editorconfig Vimscript core CLI
 # Copyright (c) 2018 Chris White.  CC-BY-SA 3.0+.
 
+# Use a manually-specified Vim, if any
+if [[ $VIM_EXE ]]; then
+    V="$VIM_EXE"
+else
+    V="vim"
+fi
+
 # Get the directory of this script.  From
 # https://stackoverflow.com/a/246128/2877364 by
 # https://stackoverflow.com/users/407731 et al.
@@ -114,7 +121,7 @@ vim_args=(
 # since it messes up ctest's interpretation
 # of the results.
 
-vim -nNes -i NONE -u NONE -U NONE \
+"$V" -nNes -i NONE -u NONE -U NONE \
     "${vim_args[@]}" \
     </dev/null &>> "${debug:-/dev/null}"
 vimstatus="$?"
@@ -127,6 +134,7 @@ fi
 # separate debugging file.
 if [[ $debug ]]
 then
+    echo "Vim in $V" >> "$debug"
     echo "Current directory: $(pwd)" >> "$debug"
     echo "Script directory: $DIR" >> "$debug"
     echo Vim args: "${vim_args[@]}" >> "$debug"

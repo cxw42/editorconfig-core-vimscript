@@ -17,8 +17,12 @@ appveyor DownloadFile https://github.com/vim/vim-appimage/releases/download/v8.1
 
 rm -rf /vim
 
+ls -l
 chmod u+x gvim.AppImage
 ./gvim.AppImage --appimage-extract
-ls
-mv squashfs-root /vim
+ls -l
+mv squashfs-root vim
+mv vim /
+ls -l
+find /vim -exec ls -ls {} +
 echo Done
