@@ -26,20 +26,43 @@ skip_commits:
   files:
     - '**/*.md'
 
+# === Build matrix ===
+
+# Win is default; Ubuntu is override.  See
+# https://www.appveyor.com/blog/2018/04/25/specialized-build-matrix-configuration-in-appveyor/
+image:
+  - Visual Studio 2013
+  - Ubuntu1604
+
 # === How to build ===
+
+cache:
+    - C:\vim -> appveyor.yml, fetch-vim.bat
 
 environment:
   VIM_EXE: C:\vim\vim\vim80\vim.exe
 
+# Platform-specific configuration for Ubuntu
+for:
+  -
+    matrix:
+      only:
+        - image: Ubuntu1604
+    environment:
+      VIM_EXE: /vim/usr/bin/vim
+    cache:
+      - /vim -> appveyor.yml, fetch-vim.sh
+
+
 install:
-#  - cmd: SET PATH=C:\Users\appveyor\.m2\apache-maven-3.5.0-bin\6ps54u5pnnbbpr6ds9rppcc7iv\apache-maven-3.5.0\bin;%JAVA_HOME%\bin;%PATH%
   - cmake --version
   - git submodule update --init --recursive
-  - fetch-vim
+  - cmd: fetch-vim
+  - sh: ./fetch-vim.sh
 
 build_script:
-  - mkdir build-win
-  - cd build-win
+  - mkdir build
+  - cd build
   - cmake ..
 
 test_script:
@@ -49,8 +72,6 @@ test_script:
 
 on_failure:
   - echo "failed"
-  - type Testing\Temporary\LastTest.log
-
-cache:
-  - C:\vim -> appveyor.yml, fetch-vim.bat
+  - cmd: type Testing\Temporary\LastTest.log
+  - sh: cat Testing/Temporary/LastTest.log
 
