@@ -18,7 +18,7 @@ else()
     set(EDITORCONFIG_UNIT_TEST_CMD "${CMAKE_SOURCE_DIR}/ecunit.bat")
 endif()
 
-add_subdirectory(unittests)
+add_subdirectory(localtests)
 add_subdirectory(tests)
 
 configure_file(CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)

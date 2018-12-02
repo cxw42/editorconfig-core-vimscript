@@ -1,5 +1,4 @@
-#
-# Copyright (c) 2018 Christopher White
+# localtests/glob/CMakeLists.txt # Copyright (c) 2018 Christopher White
 # Copyright (c) 2011-2014 EditorConfig Team
 # All rights reserved.
 #
@@ -24,40 +23,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-
-# Don't check any language compiler. This project is for EditorConfig Core
-# testing only.
-project(editorconfig-core-test NONE)
-
-# Only when we are using editorconfig-core-test independently should we check
-# cmake version, set EDITORCONFIG_CMD as cache string, and enable_testing()
-# here.
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
-    cmake_minimum_required(VERSION 2.6)
-    set(unit-test EDITORCONFIG_UNIT_TEST_CMD "editorconfig" CACHE STRING "editorconfig unit-test command (with -g <pattern> support.")
-    enable_testing()
-endif()
-
-# The most common test function.  NOTE: the pattern and source file must be
-# doubly-escaped.  This is because cmake interprets one level of escaping while
-# generating the input for ctest, and then ctest interprets the results.
-# For example, in g_brackets_close_inside (below), the string "\\\\" is
-# rendered by cmake as "\\" in the CTestTestfile.cmake file that cmake outputs.
-# The ctest executable then sees "\\" as a single escaped backslash.
-#
-# This would probably be easier if we could use CMake 3.0+ bracket arguments
-# (https://cmake.org/cmake/help/v3.4/manual/cmake-language.7.html#bracket-argument),
-# but I don't want to require a higher CMake version than the rest of the project.
-
-function(new_glob_test name pattern src_file)
-    add_test(${name} "${EDITORCONFIG_UNIT_TEST_CMD}" -g "${pattern}" --
-        "${src_file}")
-endfunction()
-
-# Mark a test as one that fails, i.e., the filename doesn't match the glob.
-function(fails name)
-    set_tests_properties(${name} PROPERTIES WILL_FAIL TRUE)
-endfunction()
 
 ###########################################################
 
