@@ -17,6 +17,7 @@ set
 
 # If it's already been loaded from the cache, we're done
 if [[ -x "$VIM_EXE" ]]; then
+    echo Vim found in cache at "$VIM_EXE"
     exit 0
 fi
 

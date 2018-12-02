@@ -56,8 +56,11 @@ for:
     matrix:
       only:
         - image: Ubuntu1604
+    # $APPVEYOR_BUILD_FOLDER isn't expanded in the environment section
+    # here, so I can't set $VIM_EXE the way I want to.  Instead,
+    # I set $VIM_EXE in the sh-specific install steps below.
     environment:
-      VIM_EXE: $APPVEYOR_BUILD_FOLDER/vim/bin/vim
+      VIM_EXE: UNDEFINED
     cache:
       - $APPVEYOR_BUILD_FOLDER/vim -> appveyor.yml, fetch-vim.sh
 
@@ -67,11 +70,10 @@ for:
 
 
 install:
-  # Ubuntu-specific setup.  These should carry forward to the build_script.
+  # Ubuntu-specific setup.  These carry forward to the build_script.
   - sh: export VIM_EXE="$APPVEYOR_BUILD_FOLDER/vim/bin/vim"
-  - sh: echo $VIM_EXE
   - sh: export PATH="$PATH":$APPVEYOR_BUILD_FOLDER/vim/bin
-  - sh: echo $PATH
+  - sh: echo "$VIM_EXE , $PATH"
 
   # Cross-platform
   - cmake --version
