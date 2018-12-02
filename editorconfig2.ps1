@@ -15,6 +15,7 @@ $argv = @(de64_args($args))
 $report_version = $false
 $set_version = ''
 $config_name = '.editorconfig'
+$extra_info = ''
 $files=@()
 
 # Hand-parse - pretend we're sort of like getopt.
@@ -47,6 +48,15 @@ while($idx -lt $argv.count) {
             }
         } #-b
 
+        '^-x$' {
+            if($idx -eq ($argv.count-1)) {
+                throw '-x <extra info>: no info provided'
+            } else {
+                ++$idx
+                $extra_info = $argv[$idx]
+            }
+        } #-x
+
         '^--$' {    # End of options, so capture the rest as filenames
             ++$idx;
             while($idx -lt $argv.count) {
@@ -63,6 +73,10 @@ while($idx -lt $argv.count) {
 ### Main ===============================================================
 
 if($debug) {
+    if($extra_info -ne '') {
+        echo "--- $extra_info --- "             | D
+    }
+
     echo "Running in       $DIR"                | D
     echo "Vim executable:  $VIM"                | D
     echo "report version?  $report_version"     | D

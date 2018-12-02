@@ -26,9 +26,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-# Copied from tests/CMakeLists.txt
+# Copied from tests/CMakeLists.txt and tweaked to add -x
 function(new_ec_test name ec_file src_file regex)
-    add_test(${name} ${EDITORCONFIG_CMD} -f ${ec_file}
+    add_test(${name} ${EDITORCONFIG_CMD} -f ${ec_file} -x "${name}"
         "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}")
     set_tests_properties(${name} PROPERTIES PASS_REGULAR_EXPRESSION "${regex}")
 endfunction()
