@@ -32,8 +32,9 @@ get_dir
 
 globpat=
 initest=
+extra_info=
 
-while getopts 'f:g:i:' opt ; do
+while getopts 'f:g:i:x:' opt ; do
     case "$opt" in
         # TODO support -b[, -h?]
 
@@ -43,25 +44,34 @@ while getopts 'f:g:i:' opt ; do
 
         (i) initest="$OPTARG"
             ;;
+
+        (x) extra_info="$OPTARG"
+            ;;
     esac
 done
 
 shift $(( $OPTIND - 1 ))
 
-if (( "$#" < 1 )); then
+if (( "$#" < 2 )); then     # Need dir and file
     exit 1
 fi
 
 fn="$(mktemp)"      # Output file
+mesgfn="$(mktemp)"  # for Vim messages
 
 vim_args=()
 
 if [[ $globpat ]]; then
     vim_args+=(
-        -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}','${globpat//\'/\'\'}') | quit! | else | cquit | endif"
+        -c "execute 'redir! > ${mesgfn//\'/\'\'}'"
+        -c "let g:editorconfig_core_vimscript_debug=1"
+        -c "echom 'Before call'"
+        -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}/${2//\'/\'\'}', '${1//\'/\'\'}/', '${globpat//\'/\'\'}') | quit! | else | cquit | endif"
+        -c "echom 'After call'"
         -c 'q!'
     )
-    echo "Matching -${globpat}- against -${1}-" 1>&2
+    [[ $extra_info ]] && echo "--- $extra_info ---" 1>&2
+    echo "Matching -${globpat}- against -${1}/${2}- in -${1}-" 1>&2
 else
     echo "not yet implemented" 1>&2
     exit 1
@@ -69,7 +79,7 @@ fi
 
 # Some extra debugging output to stderr - use ctest --output-on-failure
 # to see it for failing tests.
-echo Vim args: "${vim_args[@]}" | od -c 1>&2
+echo Vim args: "${vim_args[@]}"  1>&2
 
 # Run editorconfig.  Thanks for options to
 # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
@@ -85,7 +95,10 @@ if [[ $vimstatus -eq 0 ]]; then
     cat "$fn"
 fi
 
-rm -f "$fn"
+echo "Vim messages:" 1>&2
+cat "$mesgfn" 1>&2
+
+rm -f "$fn" "$mesgfn"
 
 exit "$vimstatus"
 # vi: set ft=sh:

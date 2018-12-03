@@ -5,6 +5,11 @@
 let s:saved_cpo = &cpo
 set cpo&vim
 
+" variables {{{2
+if !exists('g:editorconfig_core_vimscript_debug')
+    let g:editorconfig_core_vimscript_debug = 0
+endif
+" }}}2
 " === Constants, including regexes ====================================== {{{2
 " Regular expressions for parsing section headers and options.
 " Allow ``]`` and escaped ``;`` and ``#`` characters in section headers.
@@ -98,10 +103,13 @@ function! s:parse(config_filename, target_filename, lines)
                 let l:matching_section = s:matches_filename(
                     \ a:config_filename, a:target_filename, l:sectname)
             endif
-            " echom 'In section ' . l:sectname . ', which ' .
-            "     \ (l:matching_section ? 'matches' : 'does not match')
-            "     \ ' file ' . a:target_filename . ' (config ' .
-            "     \ a:config_filename . ')'
+
+            if g:editorconfig_core_vimscript_debug
+                echom 'In section ' . l:sectname . ', which ' .
+                    \ (l:matching_section ? 'matches' : 'does not match')
+                    \ ' file ' . a:target_filename . ' (config ' .
+                    \ a:config_filename . ')'
+            endif
 
             " So sections can't start with a continuation line
             let l:optname = ''
@@ -175,21 +183,38 @@ function! s:matches_filename(config_filename, target_filename, glob)
         let l:config_dirname =
                 \ tolower(substitute(l:config_dirname, '\v\\', '/', 'g'))
     endif
-    " echom 'matches_filename: config_dirname is ' . l:config_dirname
 
     let l:glob = substitute(a:glob, '\v\\([#;])', '\1', 'g')
-    if stridx(l:glob, '/') != -1
+
+    " Take account of the path to the editorconfig file.
+    " editorconfig-core-c/src/lib/editorconfig.c says:
+    "  "Pattern would be: /dir/of/editorconfig/file[double_star]/[section] if
+    "   section does not contain '/', or /dir/of/editorconfig/file[section]
+    "   if section starts with a '/', or /dir/of/editorconfig/file/[section] if
+    "   section contains '/' but does not start with '/'."
+
+    if stridx(l:glob, '/') != -1    " contains a slash
         if l:glob[0] ==# '/'
             let l:glob = l:glob[1:]     " trim leading slash
         endif
-        let l:glob = l:config_dirname . l:glob
-    else
+" This will be done by fnmatch
+"        let l:glob = l:config_dirname . l:glob
+    else                            " does not contain a slash
+        let l:config_dirname = l:config_dirname[:-2]
+            " Trim trailing slash
         let l:glob = '**/' . l:glob
     endif
 
-    "echom 'Checking <' . a:target_filename . '> against <' . l:glob . '>'
-    return editorconfig_core#fnmatch#fnmatch(a:target_filename, l:glob)
-endfunction
+    if g:editorconfig_core_vimscript_debug
+        echom '- ini#matches_filename: checking <' . a:target_filename .
+            \ '> against <' . l:glob . '> with respect to config file <' .
+            \ a:config_filename . '>'
+        echom '- ini#matches_filename: config_dirname is ' . l:config_dirname
+    endif
+
+    return editorconfig_core#fnmatch#fnmatch(a:target_filename,
+        \ l:config_dirname, l:glob)
+endfunction " matches_filename
 
 " }}}1
 " === Copyright notices ================================================= {{{2

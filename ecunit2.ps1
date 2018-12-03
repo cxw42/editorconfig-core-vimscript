@@ -15,6 +15,7 @@ $argv = @(de64_args($args))
 # Defaults
 $globpat = ''
 $files=@()
+$extra_info = ''
 
 # Hand-parse - pretend we're sort of like getopt.
 $idx = 0
@@ -34,6 +35,14 @@ while($idx -lt $argv.count) {
             }
         } #-g
 
+        '^-x$' {
+            if($idx -eq ($argv.count-1)) {
+                throw '-x <extra info>: no info provided'
+            } else {
+                ++$idx
+                $extra_info = $argv[$idx]
+            }
+        } #-g
         '^--$' {    # End of options, so capture the rest as filenames
             ++$idx;
             while($idx -lt $argv.count) {
@@ -51,6 +60,9 @@ while($idx -lt $argv.count) {
 ### Main ===============================================================
 
 if($debug) {
+    if($extra_info -ne '') {
+        echo "--- $extra_info --- "             | D
+    }
     echo "Running in       $DIR"                | D
     echo "Vim executable:  $VIM"                | D
     echo "glob pattern:    $globpat"            | D
@@ -59,7 +71,7 @@ if($debug) {
     echo "Decoded args:    $argv"               | D
 }
 
-if($files.count -lt 1) {
+if($files.count -lt 2) {
     exit
 }
 
@@ -84,8 +96,11 @@ if($env:ECUNIT_EXTRA) {
     $cmd += $env:ECUNIT_EXTRA + ' | '
 }
 
+#$cmd += "let g:editorconfig_core_vimscript_debug=1 | "
 $cmd += 'if editorconfig_core#fnmatch#fnmatch('
-$cmd += (vesc($files[0])) + ', ' + (vesc($globpat))
+$cmd += (vesc($files[0] + '/' + $files[1]))
+$cmd += ', ' + (vesc($files[0] + '/'))
+$cmd += ', ' + (vesc($globpat))
 $cmd += ') | quit! | else | cquit! | endif'
 
 if($debug) { echo "Running Vim command ${cmd}" | D }
@@ -99,9 +114,9 @@ $vim_args = @(
 # Add -V1 to the below for debugging output.
 # Do not output anything to stdout or stderr,
 # since it messes up ctest's interpretation
-# of the results.
+# of the results if regex tests are used.
 
-$basic_args = '-nNes','-i','NONE','-u','NONE','-U','NONE'   #, '-V1'
+$basic_args = '-nNes','-i','NONE','-u','NONE','-U','NONE'   # , '-V1'
 
 #echo 'DEBUG message here yay' >> $script_output_fn   #DEBUG
 

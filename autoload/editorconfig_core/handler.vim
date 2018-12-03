@@ -20,8 +20,9 @@ function! s:get_filenames(path, config_filename)
         let l:path = l:newpath
     endwhile
     return l:path_list
-endfunction " }}}1
+endfunction " get_filenames
 
+" }}}1
 " === Main ============================================================== {{{1
 
 " Find EditorConfig files and return all options matching target_filename.
@@ -90,7 +91,7 @@ function! editorconfig_core#handler#get_configurations(job)
 
     call s:preprocess_values(l:job, l:retval)
     return l:retval
-endfunction
+endfunction " get_configurations
 
 function! s:check_assertions(job)
 " TODO
@@ -111,7 +112,7 @@ function! s:check_assertions(job)
     endif
 
     return 1    " All OK if we got here
-endfunction
+endfunction " check_assertions
 
 " }}}1
 
@@ -148,8 +149,9 @@ function! s:preprocess_values(job, opts)
                 \ get(a:opts, 'indent_size', '') ==? "tab"
         let a:opts['indent_size'] = a:opts['tab_width']
     endif
-endfunction " }}}1
+endfunction " preprocess_values
 
+" }}}1
 " === Copyright notices ================================================= {{{2
 """"EditorConfig file handler
 

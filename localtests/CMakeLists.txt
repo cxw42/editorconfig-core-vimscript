@@ -50,8 +50,9 @@ endif()
 # but I don't want to require a higher CMake version than the rest of the project.
 
 function(new_glob_test name pattern src_file)
-    add_test(${name} "${EDITORCONFIG_UNIT_TEST_CMD}" -g "${pattern}" --
-        "${CMAKE_CURRENT_SOURCE_DIR}/${src_file}")
+    add_test(${name} "${EDITORCONFIG_UNIT_TEST_CMD}" -g "${pattern}"
+        -x "${name}" --
+        "${CMAKE_CURRENT_SOURCE_DIR}" "${src_file}")
 endfunction()
 
 # Mark a test as one that fails, i.e., the filename doesn't match the glob.

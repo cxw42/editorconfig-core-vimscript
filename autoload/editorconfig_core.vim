@@ -5,6 +5,19 @@
 let s:saved_cpo = &cpo
 set cpo&vim
 
+" Variables {{{1
+
+" Note: we create this variable in every script that accesses it.  Normally, I
+" would put this in plugin/editorconfig.vim.  However, in some of my tests,
+" the command-line testing environment did not load plugin/* in the normal
+" way.  Therefore, I do the check everywhere so I don't have to special-case
+" the command line.
+
+if !exists('g:editorconfig_core_vimscript_debug')
+    let g:editorconfig_core_vimscript_debug = 0
+endif
+" }}}1
+
 " The version we are, i.e., the latest version we support
 function! editorconfig_core#version()
     return [0,12,2]
@@ -55,6 +68,7 @@ function! editorconfig_core#currbuf_cli(names, job) " out_name, in_name, ...
         execute 'redir! > ' . fnameescape(a:names.dump)
         echom 'Names: ' . string(a:names)
         echom 'Job: ' . string(l:job)
+        let g:editorconfig_core_vimscript_debug = 1
     endif
 
     if type(a:names['target']) == type([])
@@ -121,4 +135,4 @@ endfunction "editorconfig_core#currbuf_cli
 let &cpo = s:saved_cpo
 unlet! s:saved_cpo
 
-" vi: set fdm=marker:
+" vi: set fdm=marker fo-=ro:

@@ -4,8 +4,8 @@
 
 "Filename matching with shell patterns.
 "
-"fnmatch(FILENAME, PATTERN) matches according to the local convention.
-"fnmatchcase(FILENAME, PATTERN) always takes case in account.
+"fnmatch(FILENAME, PATH, PATTERN) matches according to the local convention.
+"fnmatchcase(FILENAME, PATH, PATTERN) always takes case in account.
 "
 "The functions operate by translating the pattern into a regular
 "expression.  They cache the compiled regular expressions for speed.
@@ -23,6 +23,11 @@
 let s:saved_cpo = &cpo
 set cpo&vim
 
+" variables {{{1
+if !exists('g:editorconfig_core_vimscript_debug')
+    let g:editorconfig_core_vimscript_debug = 0
+endif
+" }}}1
 " === Regexes =========================================================== {{{1
 let s:LEFT_BRACE = '\v%(^|[^\\])\{'
 "LEFT_BRACE = re.compile(
@@ -72,10 +77,8 @@ function! s:re_escape(text)
 endfunction
 
 "def translate(pat, nested=0):
-"    """Translate a shell PATTERN to a regular expression.
-"
+"    Translate a shell PATTERN to a regular expression.
 "    There is no way to quote meta-characters.
-"    """
 function! editorconfig_core#fnmatch#translate(pat, ...)
     let l:nested = 0
     if a:0
@@ -88,15 +91,16 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
     let l:in_brackets = 0
 
     let l:result = ''
-    if !l:nested
-        let l:result = '\v'     " \v = very magic
-        if a:pat[0] !=? '/'
-            let l:result .= '%(^|\/)'
-            " Glob anchors at the start of the pattern or at a slash.  For
-            " example, 'o/*.txt' doesn't match 'foo/bar.txt', even though
-            " 'foo' ends with an 'o'.
-        endif
-    endif
+" No longer need this, since we are putting the config path at the front.
+"    if !l:nested    " Initialize the regex
+"        let l:result = '\v'     " \v = very magic
+"        if a:pat[0] !=? '/'
+"            let l:result .= '%(^|\/)'
+"            " Glob anchors at the start of the pattern or at a slash.  For
+"            " example, 'o/*.txt' doesn't match 'foo/bar.txt', even though
+"            " 'foo' ends with an 'o'.
+"        endif
+"    endif
         " Note: the Python sets MULTILINE and DOTALL, but Vim has \_.
         " instead of DOTALL, and \_^ / \_$ instead of MULTILINE.
 :
@@ -113,6 +117,11 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
     while l:index < l:length
         let l:current_char = a:pat[l:index]
         let l:index += 1
+
+"         if g:editorconfig_core_vimscript_debug
+"             echom ' - fnmatch#translate: ' . l:current_char . '@' .
+"                 \ (l:index-1) . '; result ' . l:result
+"         endif
 
         if l:current_char ==# '*'
             let l:pos = l:index
@@ -260,14 +269,14 @@ function! s:cached_translate(pat)
             " we don't compile the regex
     endif
     return s:_cache[a:pat]
-endfunction
+endfunction " cached_translate
 
 " }}}1
 " === Matching functions ================================================ {{{1
 
-function! editorconfig_core#fnmatch#fnmatch(name, pat)
+function! editorconfig_core#fnmatch#fnmatch(name, path, pattern)
 "def fnmatch(name, pat):
-"    """Test whether FILENAME matches PATTERN.
+"    """Test whether FILENAME matches PATH/PATTERN.
 "
 "    Patterns are Unix shell style:
 "
@@ -292,27 +301,41 @@ function! editorconfig_core#fnmatch#fnmatch(name, pat)
 
     if editorconfig_core#util#is_win()      " normalize
         let l:localname = substitute(tolower(l:localname), '\v\\', '/', 'g')
-        let l:pat = tolower(a:pat)
+        let l:path = substitute(tolower(a:path), '\v\\', '/', 'g')
+        let l:pattern = tolower(a:pattern)
     else
         let l:localname = l:localname
-        let l:pat = a:pat
+        let l:path = a:path
+        let l:pattern = a:pattern
     endif
 
-    " echom 'Testing <' . l:localname . '> against <' . l:pat . '>'
-    return editorconfig_core#fnmatch#fnmatchcase(l:localname, l:pat)
-endfunction
+    if g:editorconfig_core_vimscript_debug
+        echom '- fnmatch#fnmatch testing <' . l:localname . '> against <' .
+            \ l:pattern . '> wrt <' . l:path . '>'
+    endif
 
-function! editorconfig_core#fnmatch#fnmatchcase(name, pat)
+    return editorconfig_core#fnmatch#fnmatchcase(l:localname, l:path, l:pattern)
+endfunction " fnmatch
+
+function! editorconfig_core#fnmatch#fnmatchcase(name, path, pattern)
 "def fnmatchcase(name, pat):
-"    """Test whether FILENAME matches PATTERN, including case.
+"    """Test whether FILENAME matches PATH/PATTERN, including case.
 "
 "    This is a version of fnmatch() which doesn't case-normalize
 "    its arguments.
 "    """
 "
-    let [regex, num_groups] = s:cached_translate(a:pat)
-    " echom '  fnmatch: regex ' . regex
-    let l:match_groups = matchlist(a:name, regex)[1:]   " [0] = full match
+    let [regex, num_groups] = s:cached_translate(a:pattern)
+
+    let l:escaped_path = s:re_escape(a:path)
+    let l:regex = '\v' . l:escaped_path . l:regex
+
+    if g:editorconfig_core_vimscript_debug
+        echom '- fnmatch#fnmatchcase: regex    ' . l:regex
+        echom '- fnmatch#fnmatchcase: checking ' . a:name
+    endif
+
+    let l:match_groups = matchlist(a:name, l:regex)[1:]   " [0] = full match
     if len(l:match_groups) == 0
         return 0
     endif
@@ -333,8 +356,12 @@ function! editorconfig_core#fnmatch#fnmatchcase(name, pat)
         endif
     endfor
 
+    if g:editorconfig_core_vimscript_debug
+        echom '- fnmatch#fnmatchcase: ' . (pattern_matched ? 'matched' : 'did not match')
+    endif
+
     return pattern_matched
-endfunction
+endfunction " fnmatchcase
 
 " }}}1
 
