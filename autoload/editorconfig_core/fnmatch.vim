@@ -69,6 +69,37 @@ let s:NUMERIC_RANGE = '\v([+-]?\d+)' . '\.\.' . '([+-]?\d+)'
 ")
 
 " }}}1
+" === Internal functions ================================================ {{{1
+
+" Dump the bytes of a:text.  For debugging use.
+function! s:dump_bytes(text)
+    let l:idx=0
+    while l:idx < strlen(a:text)
+        let l:byte_val = char2nr(a:text[l:idx])
+        echom printf('%10s%-5d%02x %s', '', l:idx, l:byte_val,
+            \ a:text[l:idx])
+        let l:idx+=1
+    endwhile
+endfunction "s:dump_bytes
+
+" Dump the characters of a:text.  For debugging use.
+function! s:dump_chars(text)
+    let l:chars = split(a:text, '\zs')
+    let l:idx = 0
+    let l:out1 = ''
+    let l:out2 = ''
+    while l:idx < len(l:chars)
+        let l:char = l:chars[l:idx]
+        let l:out1 .= printf('%5s', l:char)
+        let l:out2 .= printf('%5x', char2nr(l:char))
+        let l:idx+=1
+    endwhile
+
+    echom l:out1
+    echom l:out2
+endfunction "s:dump_chars
+
+" }}}1
 " === Translating globs to patterns ===================================== {{{1
 
 " Escaper for very-magic regexes
@@ -85,16 +116,30 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
         let l:nested = a:1
     endif
 
-    let l:index = 0
-    let l:length = strlen(a:pat)  " Current index and length of pattern
-    let l:brace_level = 0
-    let l:in_brackets = 0
+    if g:editorconfig_core_vimscript_debug
+        echom '- fnmatch#translate: pattern ' . a:pat
+        echom printf(
+            \ '- %d chars', strlen(substitute(a:pat, ".", "x", "g")))
+        call s:dump_bytes(a:pat)
+    endif
 
-    let l:result = ''
+    let l:pat = a:pat   " TODO remove if we wind up not needing this
+
+"    " Translate UTF-8 bytes to characters up front.
+"    " TODO is this the Right Thing? (#2)
+"    let l:pat = iconv(a:pat, 'utf-8', &enc)
+"
+"    if g:editorconfig_core_vimscript_debug
+"        echom '- fnmatch#translate: pattern after iconv  ' . l:pat
+"        echom printf(
+"            \ '- %d chars', strlen(substitute(l:pat, ".", "x", "g")))
+"        call s:dump_bytes(l:pat)
+"    endif
+
 " No longer need this, since we are putting the config path at the front.
 "    if !l:nested    " Initialize the regex
 "        let l:result = '\v'     " \v = very magic
-"        if a:pat[0] !=? '/'
+"        if l:pat[0] !=? '/'
 "            let l:result .= '%(^|\/)'
 "            " Glob anchors at the start of the pattern or at a slash.  For
 "            " example, 'o/*.txt' doesn't match 'foo/bar.txt', even though
@@ -106,16 +151,29 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
 :
     let l:is_escaped = 0
 
+    " Find out whether the pattern has balanced braces.
     let l:left_braces=[]
     let l:right_braces=[]
-    call substitute(a:pat, s:LEFT_BRACE, '\=add(l:left_braces, 1)', 'g')
-    call substitute(a:pat, s:RIGHT_BRACE, '\=add(l:right_braces, 1)', 'g')
+    call substitute(l:pat, s:LEFT_BRACE, '\=add(l:left_braces, 1)', 'g')
+    call substitute(l:pat, s:RIGHT_BRACE, '\=add(l:right_braces, 1)', 'g')
     " Thanks to http://jeromebelleman.gitlab.io/posts/productivity/vimsub/
     let l:matching_braces = (len(l:left_braces) == len(l:right_braces))
 
+    " Unicode support (#2).  Indexing l:pat[l:index] returns bytes, per
+    " https://github.com/neovim/neovim/issues/68#issue-28114985 .
+    " Instead, use split() per vimdoc to break the input string into an
+    " array of *characters*, and process that.
+    let l:characters = split(l:pat, '\zs')
+
+    let l:index = 0     " character index
+    let l:length = len(l:characters)
+    let l:brace_level = 0
+    let l:in_brackets = 0
+
+    let l:result = ''
     let l:numeric_groups = []
     while l:index < l:length
-        let l:current_char = a:pat[l:index]
+        let l:current_char = l:characters[l:index]
         let l:index += 1
 
 "         if g:editorconfig_core_vimscript_debug
@@ -125,7 +183,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
 
         if l:current_char ==# '*'
             let l:pos = l:index
-            if l:pos < l:length && a:pat[l:pos] ==# '*'
+            if l:pos < l:length && l:characters[l:pos] ==# '*'
                 let l:result .= '\_.*'
                 let l:index += 1    " skip the second star
             else
@@ -141,8 +199,8 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
             else
                 let l:pos = l:index
                 let l:has_slash = 0
-                while l:pos < l:length && a:pat[l:pos] != ']'
-                    if a:pat[l:pos] ==# '/' && a:pat[l:pos-1] !=# '\'
+                while l:pos < l:length && l:characters[l:pos] != ']'
+                    if l:characters[l:pos] ==# '/' && l:characters[l:pos-1] !=# '\'
                         let has_slash = 1
                         break
                     endif
@@ -152,12 +210,14 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
                     " POSIX IEEE 1003.1-2017 sec. 2.13.3: '/' cannot occur
                     " in a bracket expression, so [/] matches a literal
                     " three-character string '[' . '/' . ']'.
-                    let l:result .= '\[' . s:re_escape(a:pat[l:index : l:pos-1]) . '\/'
+                    let l:result .= '\['
+                        \ . s:re_escape(join(l:characters[l:index : l:pos-1], ''))
+                        \ . '\/'
                         " escape the slash
                     let l:index = l:pos + 1
                         " resume after the slash
                 else
-                    if l:index < l:length && a:pat[l:index] =~# '\v%(\^|\!)'
+                    if l:index < l:length && l:characters[l:index] =~# '\v%(\^|\!)'
                         let l:index += 1
                         let l:result .= '[^'
                     else
@@ -188,21 +248,24 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
         elseif l:current_char ==# '{'
             let l:pos = l:index
             let l:has_comma = 0
-            while l:pos < l:length && (a:pat[l:pos] !=# '}' || l:is_escaped)
-                if a:pat[l:pos] ==# ',' && ! l:is_escaped
+            while l:pos < l:length && (l:characters[l:pos] !=# '}' || l:is_escaped)
+                if l:characters[l:pos] ==# ',' && ! l:is_escaped
                     let l:has_comma = 1
                     break
                 endif
-                let l:is_escaped = a:pat[l:pos] ==# '\' && ! l:is_escaped
+                let l:is_escaped = l:characters[l:pos] ==# '\' && ! l:is_escaped
                 let l:pos += 1
             endwhile
             if ! l:has_comma && l:pos < l:length
-                let l:num_range = matchlist(a:pat[l:index : l:pos-1], s:NUMERIC_RANGE)
+                let l:num_range =
+                    \ matchlist(join(l:characters[l:index : l:pos-1], ''),
+                    \           s:NUMERIC_RANGE)
                 if len(l:num_range) > 0     " Remember the ranges
                     call add(l:numeric_groups, [ 0+l:num_range[1], 0+l:num_range[2] ])
                     let l:result .= '([+-]?\d+)'
                 else
-                    let l:inner_xlat = editorconfig_core#fnmatch#translate(a:pat[l:index : l:pos-1], 1)
+                    let l:inner_xlat = editorconfig_core#fnmatch#translate(
+                        \ join(l:characters[l:index : l:pos-1], ''), 1)
                     let l:inner_result = l:inner_xlat[0]
                     let l:inner_groups = l:inner_xlat[1]
                     let l:result .= '\{' . l:inner_result . '\}'
@@ -232,7 +295,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
             endif
 
         elseif l:current_char ==# '/'
-            if a:pat[l:index : (l:index + 2)] ==# '**/'
+            if join(l:characters[l:index : (l:index + 2)], '') ==# '**/'
                 let l:result .= '%(/|/\_.*/)'
                 let l:index += 3
             else
@@ -257,6 +320,7 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
     if ! l:nested
         let l:result .= '\_$'
     endif
+
     return [l:result, l:numeric_groups]
 endfunction " #editorconfig_core#fnmatch#translate
 
@@ -332,10 +396,22 @@ function! editorconfig_core#fnmatch#fnmatchcase(name, path, pattern)
 
     if g:editorconfig_core_vimscript_debug
         echom '- fnmatch#fnmatchcase: regex    ' . l:regex
+        call s:dump_bytes(l:regex)
         echom '- fnmatch#fnmatchcase: checking ' . a:name
+        call s:dump_bytes(a:name)
+
+        echom '  Regex'
+        call s:dump_chars(l:regex)
+        echom '  Name'
+        call s:dump_chars(a:name)
     endif
 
     let l:match_groups = matchlist(a:name, l:regex)[1:]   " [0] = full match
+
+    if g:editorconfig_core_vimscript_debug
+        echom printf('  Got %d matches', len(l:match_groups))
+    endif
+
     if len(l:match_groups) == 0
         return 0
     endif

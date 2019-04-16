@@ -67,7 +67,7 @@ if [[ $globpat ]]; then
         -c "let g:editorconfig_core_vimscript_debug=1"
         -c "echom 'Before call'"
         -c "if editorconfig_core#fnmatch#fnmatch('${1//\'/\'\'}/${2//\'/\'\'}', '${1//\'/\'\'}/', '${globpat//\'/\'\'}') | quit! | else | cquit | endif"
-        -c "echom 'After call'"
+        -c "echom 'After call (should not get here)'"
         -c 'q!'
     )
     [[ $extra_info ]] && echo "--- $extra_info ---" 1>&2
