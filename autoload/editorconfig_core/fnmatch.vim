@@ -349,8 +349,14 @@ function! editorconfig_core#fnmatch#fnmatchcase(name, path, pattern)
         endif
 
         let [min_num, max_num] = num_groups[l:idx]
-        " No explicit test for zero --- see editorconfig/editorconfig#371.
-        if min_num > (0+l:num) || (0+l:num) > max_num
+        if (min_num > (0+l:num)) || ((0+l:num) > max_num)
+            let pattern_matched = 0
+            break
+        endif
+
+        " Reject leading zeros without sign.  This is very odd ---
+        " see editorconfig/editorconfig#371.
+        if match(l:num, '\v^0') != -1
             let pattern_matched = 0
             break
         endif

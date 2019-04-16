@@ -42,8 +42,8 @@ make -j2    # Free tier provides two cores
 make install
 ./vim --version
 cd $APPVEYOR_BUILD_FOLDER
-find . -name vim -exec ls -l {} +
+find . -type f -name vim -exec ls -l {} +
 
 # Status
-ls -lR || true
+#ls -lR || true
 echo Done fetching and installing vim
