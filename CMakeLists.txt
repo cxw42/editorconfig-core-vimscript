@@ -21,4 +21,8 @@ endif()
 add_subdirectory(localtests)
 add_subdirectory(tests)
 
-configure_file(CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+# Skip UTF8 tests on Windows for now per
+# https://github.com/editorconfig/editorconfig-core-c/pull/31#issue-154810185
+if(WIN32)
+    configure_file(CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+endif()
