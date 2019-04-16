@@ -1,6 +1,7 @@
+" encoding is utf8 - 中文
 " autoload/editorconfig_core/fnmatch.vim: Globbing for
 " editorconfig-core-vimscript.  Ported from the Python core's fnmatch.py.
-" Copyright (c) 2018 Chris White.  All rights reserved.
+" Copyright (c) 2018--2019 Chris White.  All rights reserved.
 
 "Filename matching with shell patterns.
 "
@@ -102,9 +103,22 @@ endfunction "s:dump_chars
 " }}}1
 " === Translating globs to patterns ===================================== {{{1
 
+" Used by s:re_escape: backslash-escape any character below U+0080;
+" replace all others with a %U escape.
+" See https://vi.stackexchange.com/a/19617/1430 by yours truly
+" (https://vi.stackexchange.com/users/1430/cxw).
+unlockvar s:replacement_expr
+let s:replacement_expr =
+    \ '\=' .
+    \ '((char2nr(submatch(1)) >= 128) ? ' .
+    \       'printf("%%U%08x", char2nr(submatch(1))) : ' .
+    \       '("\\" . submatch(1))' .
+    \ ')'
+lockvar s:replacement_expr
+
 " Escaper for very-magic regexes
 function! s:re_escape(text)
-    return substitute(a:text, '\v([^0-9a-zA-Z_])', '\\\1', 'g')
+    return substitute(a:text, '\v([^0-9a-zA-Z_])', s:replacement_expr, 'g')
 endfunction
 
 "def translate(pat, nested=0):
