@@ -1,6 +1,28 @@
 #!/bin/bash
 # editorconfig: Editorconfig Vimscript core CLI
-# Copyright (c) 2018 Chris White.  CC-BY-SA 3.0+.
+# Copyright (c) 2018--2019 Chris White.  CC-BY-SA 3.0+.
+
+helpstr=$(cat<<'EOF'
+editorconfig: command-line invoker for the Vimscript editorconfig core
+
+Normal usage:
+    editorconfig [-f <config-file name>] [-b <version>]
+        [-x <extra information>] <filenames...>
+
+The default <config-file name> is ".editorconfig".
+If -b is given, behave as <version>.
+If -x is given, the <extra information> is included in the debug-output file.
+
+Other options:
+    editorconfig -h, --help     Show this help
+    editorconfig -v, --version  Show version information
+
+Environment variables:
+    VIM_EXE             File/path of vim (default "vim")
+    EDITORCONFIG_DEBUG  File/path to which to append debug output
+
+EOF
+)
 
 # Use a manually-specified Vim, if any
 if [[ $VIM_EXE ]]; then
@@ -42,8 +64,7 @@ ver=
 print_ver=
 extra_info=
 
-# TODO support -h, --help
-while getopts 'vf:b:-:x:' opt ; do
+while getopts 'hvf:b:-:x:' opt ; do
     case "$opt" in
         (v) print_ver=1
             ;;
@@ -60,7 +81,14 @@ while getopts 'vf:b:-:x:' opt ; do
                 dummy)      # A dummy option so that I can test
                             # list-valued EDITORCONFIG_CMD
                             ;;
+                help)       echo "$helpstr"
+                            exit 0
+                            ;;
             esac
+            ;;
+
+        (h) echo "$helpstr"
+            exit 0
             ;;
 
         # A way to put the test name into the log
@@ -112,7 +140,6 @@ cmd+="}, {"
 [[ $ver ]] && cmd+="'version':'${ver//\'/\'\'}', "
     # version number we should behave as
 cmd+="})"
-
 
 vim_args=(
     -c "set runtimepath+=$DIR"

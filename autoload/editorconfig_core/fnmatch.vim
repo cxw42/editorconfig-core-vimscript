@@ -83,7 +83,7 @@ function! s:dump_bytes(text)
     endwhile
 endfunction "s:dump_bytes
 
-" Dump the characters of a:text.  For debugging use.
+" Dump the characters of a:text and their codepoints.  For debugging use.
 function! s:dump_chars(text)
     let l:chars = split(a:text, '\zs')
     let l:idx = 0
@@ -134,35 +134,14 @@ function! editorconfig_core#fnmatch#translate(pat, ...)
         echom '- fnmatch#translate: pattern ' . a:pat
         echom printf(
             \ '- %d chars', strlen(substitute(a:pat, ".", "x", "g")))
-        call s:dump_bytes(a:pat)
+        call s:dump_chars(a:pat)
     endif
 
     let l:pat = a:pat   " TODO remove if we wind up not needing this
 
-"    " Translate UTF-8 bytes to characters up front.
-"    " TODO is this the Right Thing? (#2)
-"    let l:pat = iconv(a:pat, 'utf-8', &enc)
-"
-"    if g:editorconfig_core_vimscript_debug
-"        echom '- fnmatch#translate: pattern after iconv  ' . l:pat
-"        echom printf(
-"            \ '- %d chars', strlen(substitute(l:pat, ".", "x", "g")))
-"        call s:dump_bytes(l:pat)
-"    endif
+    " Note: the Python sets MULTILINE and DOTALL, but Vim has \_.
+    " instead of DOTALL, and \_^ / \_$ instead of MULTILINE.
 
-" No longer need this, since we are putting the config path at the front.
-"    if !l:nested    " Initialize the regex
-"        let l:result = '\v'     " \v = very magic
-"        if l:pat[0] !=? '/'
-"            let l:result .= '%(^|\/)'
-"            " Glob anchors at the start of the pattern or at a slash.  For
-"            " example, 'o/*.txt' doesn't match 'foo/bar.txt', even though
-"            " 'foo' ends with an 'o'.
-"        endif
-"    endif
-        " Note: the Python sets MULTILINE and DOTALL, but Vim has \_.
-        " instead of DOTALL, and \_^ / \_$ instead of MULTILINE.
-:
     let l:is_escaped = 0
 
     " Find out whether the pattern has balanced braces.
@@ -410,13 +389,8 @@ function! editorconfig_core#fnmatch#fnmatchcase(name, path, pattern)
 
     if g:editorconfig_core_vimscript_debug
         echom '- fnmatch#fnmatchcase: regex    ' . l:regex
-        call s:dump_bytes(l:regex)
-        echom '- fnmatch#fnmatchcase: checking ' . a:name
-        call s:dump_bytes(a:name)
-
-        echom '  Regex'
         call s:dump_chars(l:regex)
-        echom '  Name'
+        echom '- fnmatch#fnmatchcase: checking ' . a:name
         call s:dump_chars(a:name)
     endif
 

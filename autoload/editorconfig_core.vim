@@ -98,7 +98,7 @@ function! editorconfig_core#currbuf_cli(names, job) " out_name, in_name, ...
         let l:options = editorconfig_core#handler#get_configurations(l:job)
 
         if has_key(a:names, 'dump')
-            echom 'Result: ' . string(l:options)
+            echom 'editorconfig_core#currbuf_cli result: ' . string(l:options)
         endif
 
         if len(l:targets) > 1
