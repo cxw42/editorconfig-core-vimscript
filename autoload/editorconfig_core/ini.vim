@@ -15,6 +15,7 @@ endif
 " Allow ``]`` and escaped ``;`` and ``#`` characters in section headers.
 " In fact, allow \ to escape any single character - it needs to cover at
 " least \ * ? [ ! ] { }.
+unlockvar s:SECTCRE s:OPTCRE s:MAX_SECTION_NAME s:MAX_PROPERTY_NAME s:MAX_PROPERTY_VALUE
 let s:SECTCRE = '\v^\s*\[(%([^\\#;]|\\.)+)\]'
 
 " Regular expression for parsing option name/values.
@@ -26,6 +27,8 @@ let s:OPTCRE = '\v\s*([^:=[:space:]][^:=]*)\s*([:=])\s*(.*)$'
 let s:MAX_SECTION_NAME = 4096
 let s:MAX_PROPERTY_NAME = 50
 let s:MAX_PROPERTY_VALUE = 255
+
+lockvar s:SECTCRE s:OPTCRE s:MAX_SECTION_NAME s:MAX_PROPERTY_NAME s:MAX_PROPERTY_VALUE
 
 " }}}2
 " === Main ============================================================== {{{1
@@ -54,15 +57,13 @@ function! editorconfig_core#ini#read_ini_file(config_filename, target_filename)
 endfunction
 
 function! s:parse(config_filename, target_filename, lines)
-"    """Parse a sectioned setup file.
-
+"    Parse a sectioned setup file.
 "    The sections in setup file contains a title line at the top,
 "    indicated by a name in square brackets (`[]'), plus key/value
 "    options lines, indicated by `name: value' format lines.
 "    Continuations are represented by an embedded newline then
 "    leading whitespace.  Blank lines, lines beginning with a '#',
 "    and just about everything else are ignored.
-"    """
 
     let l:in_section = 0
     let l:matching_section = 0
@@ -89,9 +90,11 @@ function! s:parse(config_filename, target_filename, lines)
             continue
         endif
 
-        " a section header or option header?
         " is it a section header?
-        "echom "Header? <" . l:line . ">"
+        if g:editorconfig_core_vimscript_debug
+            echom "Header? <" . l:line . ">"
+        endif
+
         let l:mo = matchlist(l:line, s:SECTCRE)
         if len(l:mo)
             let l:sectname = l:mo[1]
@@ -114,20 +117,28 @@ function! s:parse(config_filename, target_filename, lines)
             " So sections can't start with a continuation line
             let l:optname = ''
 
-        " an option line?
+        " Is it an option line?
         else
             let l:mo = matchlist(l:line, s:OPTCRE)
             if len(l:mo)
                 let l:optname = mo[1]
                 let l:optval = mo[3]
-                " echom 'Saw raw optname <' . l:optname . '>=<' . l:optval . '>'
+
+                if g:editorconfig_core_vimscript_debug
+                    echom printf('Saw raw opt <%s>=<%s>', l:optname, l:optval)
+                endif
+
                 if l:optval =~# '\v[;#]'
                     " ';' and '#' are comment delimiters only if
                     " preceded by a spacing character
-                    let l:m = matchlist(l:optval, '\v(.{-}) [;#]')
+                    let l:m = matchlist(l:optval, '\v(.{-})\s[;#]')
                     if len(l:m)
                         let l:optval = l:m[1]
                     endif
+
+                    " ; and # can be escaped with backslash.
+                    let l:optval = substitute(l:optval, '\v\\([;#])', '\1', 'g')
+
                 endif
                 let l:optval = editorconfig_core#util#strip(l:optval)
                 " allow empty values
@@ -138,12 +149,14 @@ function! s:parse(config_filename, target_filename, lines)
                 if !l:in_section && optname ==? 'root'
                     let l:is_root = (optval ==? 'true')
                 endif
-                " echom 'Saw option ' . l:optname . ' = ' . l:optval
+                if g:editorconfig_core_vimscript_debug
+                    echom printf('Saw opt <%s>=<%s>', l:optname, l:optval)
+                endif
+
                 if l:matching_section &&
                             \ strlen(l:optname) <= s:MAX_PROPERTY_NAME &&
                             \ strlen(l:optval) <= s:MAX_PROPERTY_VALUE
                     let l:options[l:optname] = l:optval
-                    "echom '  - stashed'
                 endif
             else
                 " a non-fatal parsing error occurred.  set up the
