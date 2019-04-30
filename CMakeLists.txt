@@ -1,7 +1,10 @@
 # This file is used for testing only
 
-# To perform the test, run `cmake .` at the root of the project tree followed
-# by ctest .
+# To perform the test, from the root of the project tree, run
+#   mkdir build
+#   cd build
+#   cmake ..
+#   ctest .
 
 cmake_minimum_required(VERSION 3.5)
 #set(CMAKE_LEGACY_CYGWIN_WIN32 0)

@@ -2,6 +2,7 @@
 # editorconfig: Editorconfig Vimscript core CLI
 # Copyright (c) 2018--2019 Chris White.  CC-BY-SA 3.0+.
 
+# Documentation {{{1
 helpstr=$(cat<<'EOF'
 editorconfig: command-line invoker for the Vimscript editorconfig core
 
@@ -24,41 +25,55 @@ Environment variables:
 EOF
 )
 
-# Use a manually-specified Vim, if any
-if [[ $VIM_EXE ]]; then
-    V="$VIM_EXE"
-else
-    V="vim"
-fi
+# }}}1
 
-# Get the directory of this script.  From
-# https://stackoverflow.com/a/246128/2877364 by
+# Get the directory of this script into $this_script_dir. {{{1
+# From https://stackoverflow.com/a/246128/2877364 by
 # https://stackoverflow.com/users/407731 et al.
 
-DIR=
+this_script_dir=
 function get_dir()
 {
-    SOURCE="${BASH_SOURCE[0]}"
-    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-      DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
-      SOURCE="$(readlink "$SOURCE")"
-      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    local script_source_path="${BASH_SOURCE[0]}"
+    while [ -h "$script_source_path" ]; do
+        # resolve $script_source_path until the file is no longer a symlink
+        this_script_dir="$( cd -P "$( dirname "$script_source_path" )" >/dev/null && pwd )"
+        script_source_path="$(readlink "$script_source_path")"
+        [[ $script_source_path != /* ]] && script_source_path="$this_script_dir/$script_source_path"
+            # if $script_source_path was a relative symlink, we need to resolve
+            # it relative to the path where the symlink file was located
     done
-    DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
-}
+    this_script_dir="$( cd -P "$( dirname "$script_source_path" )" >/dev/null && pwd )"
+} #get_dir()
 
 get_dir
 
-###
+# }}}1
 
-# Debug output
+# Setup debug output, if $EDITORCONFIG_DEBUG is given {{{1
 debug="${EDITORCONFIG_DEBUG}"   # Debug filename
 if [[ $debug && $debug != /* ]]; then     # Relative to this script unless it
-    debug="${DIR}/${debug}"     # starts with a slash.  This is because
-fi                              # cwd is usually not $DIR when testing.
+    debug="${this_script_dir}/${debug}"     # starts with a slash.  This is because
+fi                              # cwd is usually not $this_script_dir when testing.
+if [[ $debug ]] && ! touch "$debug"; then
+    echo "Could not write file '$debug' - aborting" 1>&2
+    exit 1
+fi
+
 [[ $debug ]] && echo "$(date) ==================================" >> "$debug"
 
-# Option processing
+# }}}1
+
+# Option processing {{{1
+
+# Use a manually-specified Vim, if any
+if [[ $VIM_EXE ]]; then
+    vim_pgm="$VIM_EXE"
+else
+    vim_pgm="vim"
+fi
+
+# Command-line options
 confname=
 ver=
 print_ver=
@@ -114,6 +129,10 @@ if [[ $1 = '-' ]]; then
     exit 1
 fi
 
+# }}}1
+
+# Build the Vim command line {{{1
+
 fn="$(mktemp)"      # Vim will write the settings into here.  ~stdout.
 script_output_fn="${debug:+$(mktemp)}"  # Vim's :messages.  ~stderr.
 
@@ -142,18 +161,21 @@ cmd+="}, {"
 cmd+="})"
 
 vim_args=(
-    -c "set runtimepath+=$DIR"
+    -c "set runtimepath+=$this_script_dir"
     -c "$cmd"
 )
 
-# Run editorconfig.  Thanks for options to
+# }}}1
+
+# Run the editorconfig core through Vim {{{1
+# Thanks for options to
 # http://vim.wikia.com/wiki/Vim_as_a_system_interpreter_for_vimscript .
 # Add -V1 to the below for debugging output.
 # Do not output anything to stdout or stderr,
 # since it messes up ctest's interpretation
 # of the results.
 
-"$V" -nNes -i NONE -u NONE -U NONE \
+"$vim_pgm" -nNes -i NONE -u NONE -U NONE \
     "${vim_args[@]}" \
     </dev/null &>> "${debug:-/dev/null}"
 vimstatus="$?"
@@ -161,15 +183,18 @@ if [[ $vimstatus -eq 0 ]]; then
     cat "$fn"
 fi
 
+# }}}1
+
+# Produce debug output {{{1
 # Debug output cannot be included on stdout or stderr, because
 # ctest's regex check looks both of those places.  Therefore, dump to a
 # separate debugging file.
 if [[ $debug ]]
 then
     [[ $extra_info ]] && echo "--- $extra_info ---" >> "$debug"
-    echo "Vim in $V" >> "$debug"
+    echo "Vim in $vim_pgm" >> "$debug"
     echo "Current directory: $(pwd)" >> "$debug"
-    echo "Script directory: $DIR" >> "$debug"
+    echo "Script directory: $this_script_dir" >> "$debug"
     echo Vim args: "${vim_args[@]}" >> "$debug"
     #od -c <<<"${vim_args[@]}" >> "$debug"
     echo "Vim returned $vimstatus" >> "$debug"
@@ -181,7 +206,13 @@ then
     rm -f "$script_output_fn"
 fi
 
+# }}}1
+
+# Cleanup {{{1
+
 rm -f "$fn"
 
-exit "$vimstatus"
-# vi: set ft=sh:
+# }}}1
+
+exit "$vimstatus"   # forward the Vim exit status to the caller
+# vi: set ft=sh fdm=marker:

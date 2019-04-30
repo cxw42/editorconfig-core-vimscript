@@ -7,7 +7,7 @@
 
 . "$PSScriptRoot\ecvimlib.ps1"
 
-### Argument processing ================================================
+# Argument parsing =================================================== {{{1
 
 $argv = @(de64_args($args))
 
@@ -70,7 +70,8 @@ while($idx -lt $argv.count) {
     ++$idx
 } # end foreach argument
 
-### Main ===============================================================
+# }}}1
+# Argument processing ================================================ {{{1
 
 if($debug) {
     if($extra_info -ne '') {
@@ -114,6 +115,8 @@ if($env:EDITORCONFIG_EXTRA) {
     $cmd += $env:EDITORCONFIG_EXTRA + ' | '
 }
 
+# }}}1
+# Build Vim command line ============================================= {{{1
 $cmd += 'call editorconfig_core#currbuf_cli({'
 
 # Names
@@ -140,7 +143,7 @@ if($set_version) { $cmd += "'version':" + (vesc($set_version)) + ", " }
 $cmd += "})"
 
 #$cmd =':q!'  # DEBUG
-if($debug) { echo "Running Vim command ${cmd}" | D }
+if($debug) { echo "Using Vim command ${cmd}" | D }
 $vim_args = @(
     '-c', "set rtp+=$DIR",
     '-c', $cmd,
@@ -156,6 +159,9 @@ $vim_args = @(
 
 $basic_args = '-nNes','-i','NONE','-u','NONE','-U','NONE'   #, '-V1'
 
+# }}}1
+# Run Vim ============================================================ {{{1
+
 if($debug) { echo "Running vim ${VIM}" | D }
 $vimstatus = run_process $VIM -stdout $debug -stderr $debug `
     -argv ($basic_args+$vim_args)
@@ -164,6 +170,9 @@ if($debug) { echo "Done running vim" | D }
 if($vimstatus -eq 0) {
     cat $fn
 }
+
+# }}}1
+# Produce debug output =============================================== {{{1
 
 # Debug output cannot be included on stdout or stderr, because
 # ctest's regex check looks both of those places.  Therefore, dump to a
@@ -199,8 +208,10 @@ if($debug) {
     del -Force $script_output_fn
 } #endif $debug
 
+# }}}1
+
 del -Force $fn
 
 exit $vimstatus
 
-# vi: set ts=4 sts=4 sw=4 et ai:
+# vi: set fdm=marker:
